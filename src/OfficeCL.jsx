@@ -58,14 +58,16 @@ function MiniFlag({ x, z, map }) {
 // ---------- Fila de escritorios blancos con pantallas de vidrio esmerilado ----------
 const SEATS = [-3.5, -2.1, -0.7, 0.7, 2.1, 3.5]
 const BACKS = ['#2b2e32', '#2b2e32', '#8e9298', '#9b9fa5']
+const TAKEN = new Set([OFFICES.cl.npc.key, OFFICES.cl.nico.key])
 const JACKETS = ['#1e2126', '#23304a', '#2a2a2d', '#3d1f1f']
 
 function Bench({ x, z, len, d, index, flag }) {
   const seats = useMemo(() => {
     const rand = rng(300 + index * 19)
     return [-1, 1].flatMap((s) =>
-      SEATS.map((sx) => ({
+      SEATS.map((sx, si) => ({
         s,
+        si,
         sx,
         chair: rand() > 0.12,
         rot: (rand() - 0.5) * 0.5,
@@ -80,6 +82,7 @@ function Bench({ x, z, len, d, index, flag }) {
       }))
     )
   }, [index])
+  const taken = TAKEN
   const top = 0.04
   const metal = { color: '#8b9096', roughness: 0.45, metalness: 0.5 }
   return (
@@ -126,7 +129,7 @@ function Bench({ x, z, len, d, index, flag }) {
 
       {seats.map((p, i) => (
         <group key={i}>
-          {p.chair && (
+          {p.chair && !taken.has(`${index}:${p.s}:${p.si}`) && (
             <Chair
               x={p.sx}
               z={p.s * (d / 2 + 0.2 + p.pull)}

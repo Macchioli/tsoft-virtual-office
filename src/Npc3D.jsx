@@ -5,10 +5,14 @@ import { useGLTF } from '@react-three/drei'
 import { clone } from 'three/examples/jsm/utils/SkeletonUtils.js'
 import { makePaperTexture } from './textures'
 import CartoonMore from './Character'
+import { Chair } from './Decor'
 
 const BASE = import.meta.env.BASE_URL
 const NICO_URL = `${BASE}models/nico.glb`
 const MORE_URL = `${BASE}models/more.glb`
+// Sentado: altura de cadera sobre el piso y cuánto se corre hacia atrás del centro de la silla
+const SEAT_HIPS = 0.58
+const SIT_BACK = -0.06
 const angleDiff = (a, b) => Math.atan2(Math.sin(a - b), Math.cos(a - b))
 
 // Rota un hueso sobre su pose de animación (se aplica después de mixer.update, cada frame)
@@ -19,7 +23,7 @@ function twist(bone, x, y, z) {
   bone.quaternion.multiply(_q.setFromEuler(_e.set(x, y, z)))
 }
 
-// Dobla un hueso del brazo hacia adelante/atrás, sin depender de los ejes locales del esqueleto:
+// Dobla un hueso hacia adelante/atrás, sin depender de los ejes locales del esqueleto:
 // gira alrededor del eje izquierda-derecha del personaje. Ángulo negativo = hacia adelante.
 const _axis = new Vector3()
 const _wq = new Quaternion()
@@ -58,14 +62,16 @@ function Paper({ paperRef, hidden }) {
 /**
  * Personaje 3D (GLB de Avaturn, huesos tipo Mixamo).
  * mode: 'idle' | 'talk' | 'offer'
+ * seated: sentado en una silla (x, z = centro de la silla; rot = hacia dónde mira)
  * holdsPaper: si true, la mano derecha sostiene la hoja (paperRef) y la estira en 'offer'
  */
-function Npc3D({ url, id, x, z, rot, mode, holdsPaper = false, paperRef, paperHidden }) {
+function Npc3D({ url, id, x, z, rot, mode, seated = false, holdsPaper = false, paperRef, paperHidden }) {
   const gltf = useGLTF(url)
   const model = useMemo(() => clone(gltf.scene), [gltf.scene])
   const root = useRef()
   const localPaper = useRef()
-  const pose = useRef({ t: 0, yaw: rot, headYaw: 0, talk: 0, offer: 0 })
+  const pose = useRef({ t: 0, yaw: rot, headYaw: 0, talk: 0, offer: 0, drop: null })
+  const figure = useRef()
   const tmp = useMemo(() => new Vector3(), [])
 
   // Mixer propio: así los gestos se aplican siempre DESPUÉS de la animación
@@ -99,8 +105,10 @@ function Npc3D({ url, id, x, z, rot, mode, holdsPaper = false, paperRef, paperHi
     const toPlayer = Math.atan2(dx, dz)
     const facing = mode === 'talk' || mode === 'offer'
 
-    // El cuerpo se gira hacia el jugador cuando conversa o ofrece la hoja
-    p.yaw += angleDiff(facing ? toPlayer : rot, p.yaw) * Math.min(1, dt * 6)
+    // El cuerpo se gira hacia el jugador cuando conversa o ofrece la hoja.
+    // Sentado: la silla gira hasta ±2.6 rad hacia el jugador (no da la vuelta completa)
+    const aim = facing ? (seated ? rot + MathUtils.clamp(angleDiff(toPlayer, rot), -2.6, 2.6) : toPlayer) : rot
+    p.yaw += angleDiff(aim, p.yaw) * Math.min(1, dt * 6)
     root.current.rotation.y = p.yaw
 
     // La cabeza sigue al jugador si está cerca
@@ -116,16 +124,37 @@ function Npc3D({ url, id, x, z, rot, mode, holdsPaper = false, paperRef, paperHi
     if (mode === 'talk') twist(bones.Head, Math.sin(p.t * 5) * 0.04, 0, 0)
 
     const r = root.current
+    if (seated) {
+      // Altura de la cadera parada, medida una sola vez: de ahí sale cuánto hay que bajar al personaje
+      if (p.drop === null) {
+        r.updateWorldMatrix(true, true)
+        bones.Hips.getWorldPosition(tmp)
+        p.drop = Math.max(0, tmp.y - SEAT_HIPS)
+      }
+      figure.current.position.set(0, -p.drop, SIT_BACK)
+      // Piernas: muslos hacia adelante, pantorrillas hacia abajo, pies planos (orden padre -> hijo)
+      for (const side of ['Left', 'Right']) {
+        bend(bones[`${side}UpLeg`], r, -1.45)
+        bend(bones[`${side}Leg`], r, 1.5)
+        bend(bones[`${side}Foot`], r, -0.1)
+      }
+      twist(bones.Spine, 0.05, 0, 0)
+    }
     if (holdsPaper) {
       // Brazo derecho: sostiene la hoja con el antebrazo flexionado; al ofrecerla estira el brazo
-      bend(bones.RightArm, r, -0.35 - p.offer * 1.0)
+      bend(bones.RightArm, r, -0.35 - p.offer * (seated ? 0.8 : 1.0))
       bend(bones.RightForeArm, r, -1.3 + p.offer * 1.05)
-      // Brazo izquierdo: gesticula al hablar
-      bend(bones.LeftArm, r, p.talk * -0.35)
-      bend(bones.LeftForeArm, r, p.talk * (-0.9 + Math.sin(p.t * 2.4) * 0.3))
+      // Brazo izquierdo: sentada, descansa sobre el escritorio y gesticula un poco al hablar
+      bend(bones.LeftArm, r, (seated ? -0.5 : 0) + p.talk * -0.35)
+      bend(bones.LeftForeArm, r, (seated ? -0.9 : 0) + p.talk * (-0.9 + Math.sin(p.t * 2.4) * 0.3))
     } else {
-      // Gesticula con el antebrazo derecho mientras habla
-      bend(bones.RightForeArm, r, p.talk * (-0.9 + Math.sin(p.t * 2.4) * 0.3))
+      // Gesticula con el antebrazo derecho mientras habla (sentado, los dos brazos van sobre el escritorio)
+      if (seated) {
+        bend(bones.LeftArm, r, -0.5)
+        bend(bones.LeftForeArm, r, -0.9)
+        bend(bones.RightArm, r, -0.5 - p.talk * 0.15)
+        bend(bones.RightForeArm, r, -0.9 + p.talk * Math.sin(p.t * 2.4) * 0.3)
+      } else bend(bones.RightForeArm, r, p.talk * (-0.9 + Math.sin(p.t * 2.4) * 0.3))
     }
 
     // La hoja sigue a la mano derecha
@@ -140,7 +169,10 @@ function Npc3D({ url, id, x, z, rot, mode, holdsPaper = false, paperRef, paperHi
   return (
     // userData.targetId es lo que lee Interaction.jsx para saber a quién apunta el jugador
     <group ref={root} position={[x, 0, z]} rotation-y={rot} userData={{ targetId: id }}>
-      <primitive object={model} />
+      {seated && <Chair x={0} z={0} rot={Math.PI} />}
+      <group ref={figure}>
+        <primitive object={model} />
+      </group>
       {holdsPaper && (
         <group ref={localPaper}>
           <Paper paperRef={paperRef} hidden={paperHidden} />

@@ -194,6 +194,7 @@ function Sticker({ x, z, rot, text, sub }) {
 
 // ---------- Fila de escritorios tipo bench con sillas, notebooks, termos y mates ----------
 const SEATS = [-3.9, -2.6, -1.3, 0, 1.3, 2.6, 3.9]
+const TAKEN = new Set([OFFICES.ar.npc.key, OFFICES.ar.nico.key])
 const JACKETS = ['#1e2126', '#23304a', '#2a2a2d', '#3d1f1f', '#1e2126']
 
 function Bench({ x, z, len, d, index }) {
@@ -201,8 +202,9 @@ function Bench({ x, z, len, d, index }) {
   const seats = useMemo(() => {
     const rand = rng(200 + index * 17)
     return [-1, 1].flatMap((s) =>
-      SEATS.map((sx) => ({
+      SEATS.map((sx, si) => ({
         s,
+        si,
         sx,
         chair: rand() > 0.1,
         rot: (rand() - 0.5) * 0.5,
@@ -215,6 +217,7 @@ function Bench({ x, z, len, d, index }) {
       }))
     )
   }, [index])
+  const taken = TAKEN
   const top = 0.04
   const metal = { color: '#17181b', roughness: 0.5, metalness: 0.4 }
   return (
@@ -253,7 +256,7 @@ function Bench({ x, z, len, d, index }) {
 
       {seats.map((p, i) => (
         <group key={i}>
-          {p.chair && (
+          {p.chair && !taken.has(`${index}:${p.s}:${p.si}`) && (
             <Chair
               x={p.sx}
               z={p.s * (d / 2 + 0.2 + p.pull)}

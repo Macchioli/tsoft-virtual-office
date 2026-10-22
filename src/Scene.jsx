@@ -1,8 +1,8 @@
 import { useMemo } from 'react'
-import { NICO, NPC, OFFICES, SIGN_TEXT } from './data'
-import { makePaperTexture, makeSignTexture } from './textures'
+import { NICO, NPC, OFFICES } from './data'
+import { makePaperTexture } from './textures'
 import { MoreNpc, NicoNpc } from './Npc3D'
-import { Ceiling, Lights, PlantWall, Table } from './Decor'
+import { Ceiling, Lights, PlantWall } from './Decor'
 import OfficeAR from './OfficeAR'
 import OfficeCL from './OfficeCL'
 
@@ -11,26 +11,8 @@ export function usePaperTexture() {
   return useMemo(makePaperTexture, [])
 }
 
-// Cartel "Cursos obligatorios" sobre el panel de plantas, encima del escritorio
-function Sign({ text, panelZ }) {
-  const map = useMemo(() => makeSignTexture(text), [text])
-  return (
-    <group position={[0, 1.45, panelZ]}>
-      <mesh position={[0, 0, 0.03]}>
-        <boxGeometry args={[3.12, 1.12, 0.06]} />
-        <meshStandardMaterial color="#2b2b2b" />
-      </mesh>
-      <mesh position={[0, 0, 0.065]}>
-        <planeGeometry args={[3.0, 1.0]} />
-        {/* meshBasicMaterial + toneMapped=false: no depende de las luces, se lee parejo a lo lejos */}
-        <meshBasicMaterial map={map} toneMapped={false} />
-      </mesh>
-    </group>
-  )
-}
-
-// office: 'ar' o 'cl'. Cada oficina trae sus muebles; el rincón de bienvenida (enredadera,
-// cartel, escritorio y More) es el mismo en las dos.
+// office: 'ar' o 'cl'. Cada oficina trae sus muebles; la pared del fondo (enredadera con el logo)
+// es la misma en las dos.
 export default function Scene({ office, papersRef, paperRef, moreMode, nicoMode = 'idle', paperHidden }) {
   const cfg = OFFICES[office]
   const Office = office === 'cl' ? OfficeCL : OfficeAR
@@ -54,24 +36,22 @@ export default function Scene({ office, papersRef, paperRef, moreMode, nicoMode 
       <Lights list={cfg.lights} />
       <Office />
 
-      {/* Rincón de bienvenida: enredadera con neón, cartel, escritorio y una luz cálida */}
+      {/* Pared del fondo: enredadera con el logo de neón (sin cartel ni escritorio) */}
       <PlantWall panelZ={cfg.panelZ} />
-      <Table x={cfg.desk.x} z={cfg.desk.z} w={cfg.desk.w} d={cfg.desk.d} />
-      <Sign text={SIGN_TEXT} panelZ={cfg.panelZ} />
-      <pointLight position={[0, 2.9, cfg.panelZ + 1.4]} intensity={6} distance={8} color="#fff3d6" />
 
-      {/* More y Nico: el grupo es el que recorre el raycaster */}
+      {/* More y Nico, sentados en sus sillas: el grupo es el que recorre el raycaster */}
       <group ref={papersRef}>
         <MoreNpc
           id={NPC.id}
           x={cfg.npc.x}
           z={cfg.npc.z}
           rot={cfg.npc.rot}
+          seated
           mode={moreMode}
           paperRef={paperRef}
           paperHidden={paperHidden}
         />
-        <NicoNpc id={NICO.id} x={cfg.nico.x} z={cfg.nico.z} rot={cfg.nico.rot} mode={nicoMode} />
+        <NicoNpc id={NICO.id} x={cfg.nico.x} z={cfg.nico.z} rot={cfg.nico.rot} seated mode={nicoMode} />
       </group>
     </>
   )

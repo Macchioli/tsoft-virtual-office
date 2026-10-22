@@ -57,10 +57,21 @@ function welcome(depth) {
   const panelZ = -depth / 2 + 0.225
   return {
     panelZ,
-    desk: { id: 'd1', x: 0, z: panelZ + 0.475, w: 2.2, d: 0.9 },
-    npc: { x: 1.95, z: panelZ + 0.975, rot: -0.3 },
   }
 }
+
+// Asiento de un banco: b = fila, s = lado (+1 mira hacia el fondo, -1 hacia la entrada), i = lugar
+// Los NPC se sientan acá. Para cambiarlos de lugar, tocá solo estos tres números en cada oficina.
+function seatOf(bench, xs, { b, s, i }) {
+  return {
+    key: `${b}:${s}:${i}`,
+    x: bench.x + xs[i],
+    z: bench.rows[b] + s * (bench.d / 2 + 0.2),
+    rot: s > 0 ? Math.PI : 0, // hacia dónde mira el personaje sentado (hacia el escritorio)
+  }
+}
+export const AR_SEATS_X = [-3.9, -2.6, -1.3, 0, 1.3, 2.6, 3.9]
+export const CL_SEATS_X = [-3.5, -2.1, -0.7, 0.7, 2.1, 3.5]
 
 const benchesOf = (b) => b.rows.map((z, i) => ({ id: `b${i}`, x: b.x, z, w: b.len, d: b.d }))
 const box = (id, o, w, d) => ({ id, x: o.x, z: o.z, w, d })
@@ -70,6 +81,9 @@ const arRoom = { w: 16, d: 22 }
 const arW = welcome(arRoom.d)
 const arBench = { x: 1.3, len: 9.4, d: 1.5, rows: [7.0, 3.2, -0.6, -4.4] }
 const arBenches = benchesOf(arBench)
+// i: 0 = punta del pasillo de lockers (en el medio de la fila no se llega: los bancos tapan el paso)
+const arMore = seatOf(arBench, AR_SEATS_X, { b: 3, s: 1, i: 0 })
+const arNico = seatOf(arBench, AR_SEATS_X, { b: 1, s: -1, i: 0 })
 const arStorage = [5.1, 1.3, -2.5].map((z, i) => ({ id: `s${i}`, x: arBench.x, z, w: 8, d: 0.5 }))
 const arNook = {
   table: { x: -6.1, z: -9.4, w: 1.5, d: 0.8 },
@@ -91,7 +105,8 @@ const ar = {
   room: arRoom,
   start: [-5.0, 1.7, 9.6], // al final del pasillo de lockers, mirando hacia la enredadera
   ...arW,
-  nico: { x: -6.3, z: 4.6, rot: 0.15 }, // en el pasillo de lockers, mirando hacia la entrada
+  npc: arMore,
+  nico: arNico,
   corridorX: -4.2, // límite entre las baldosas del pasillo y la alfombra
   lockers: { z0: 10.2, cols: 24, rows: 4, cellW: 0.5, cellH: 0.55, depth: 0.5 },
   bench: arBench,
@@ -128,10 +143,6 @@ const ar = {
     { pos: [-6.1, 3.0, -8.4], color: '#ffd9a8', intensity: 6, distance: 7 },
   ],
   colliders: [
-    arW.desk,
-    // More (3D) estira el brazo ~0,6 m al ofrecer la hoja: el collider mantiene al jugador a 1 m
-    { id: 'more', x: arW.npc.x, z: arW.npc.z, w: 1.4, d: 1.4 },
-    { id: 'nico', x: -6.3, z: 4.6, w: 0.7, d: 0.7 },
     ...arBenches.map((b) => ({ ...b, w: b.w + 0.1, d: b.d + 1.3 })),
     ...arStorage,
     box('column', arColumn, arColumn.r * 2 + 0.1, arColumn.r * 2 + 0.1),
@@ -147,6 +158,8 @@ const clRoom = { w: 16, d: 24 }
 const clW = welcome(clRoom.d)
 const clBench = { x: -1.3, len: 8.6, d: 1.4, rows: [7.8, 4.2, 0.6, -3.0, -6.6] }
 const clBenches = benchesOf(clBench)
+const clMore = seatOf(clBench, CL_SEATS_X, { b: 3, s: -1, i: 5 })
+const clNico = seatOf(clBench, CL_SEATS_X, { b: 1, s: -1, i: 5 })
 // Cajoneras blancas al final de cada fila, del lado del pasillo oscuro
 const clPedestals = clBench.rows.map((z, i) => ({
   id: `p${i}`,
@@ -167,7 +180,8 @@ const cl = {
   room: clRoom,
   start: [5.6, 1.7, 10.4], // en el pasillo oscuro, mirando hacia el fondo
   ...clW,
-  nico: { x: 6.5, z: 6.4, rot: -0.15 }, // en el pasillo, mirando hacia la entrada
+  npc: clMore,
+  nico: clNico,
   corridorX: 4.2, // límite entre la alfombra de los escritorios y el pasillo oscuro
   bench: clBench,
   benches: clBenches,
@@ -205,10 +219,6 @@ const cl = {
     { pos: [6.1, 3.0, 2], color: '#fff1dc', intensity: 7, distance: 12 },
   ],
   colliders: [
-    clW.desk,
-    // More (3D) estira el brazo ~0,6 m al ofrecer la hoja: el collider mantiene al jugador a 1 m
-    { id: 'more', x: clW.npc.x, z: clW.npc.z, w: 1.4, d: 1.4 },
-    { id: 'nico', x: 6.5, z: 6.4, w: 0.7, d: 0.7 },
     ...clBenches.map((b) => ({ ...b, w: b.w + 0.1, d: b.d + 1.3 })),
     ...clPedestals,
     ...clColumns.map((c) => box(c.id, c, c.r * 2 + 0.1, c.r * 2 + 0.1)),

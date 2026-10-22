@@ -121,20 +121,7 @@ export function makeSignTexture(text) {
   return t
 }
 
-// ---------- Cartel de neón: logo arriba + "Bienvenido/a Tsofer!" abajo ----------
-const WELCOME = 'Bienvenido/a Tsofer!'
-
-// La tipografía (Pacifico) viene de Google Fonts, con un <link> en index.html.
-// Si no carga (sin internet), se usa una cursiva del sistema.
-let fontPromise
-function loadFont() {
-  if (!fontPromise) {
-    fontPromise = (
-      document.fonts ? document.fonts.load('100px "Pacifico"', WELCOME) : Promise.resolve()
-    ).catch(() => null)
-  }
-  return fontPromise
-}
+// ---------- Cartel de neón con el logo ----------
 
 // Respaldo si no está el PNG del logo: dibuja "TSOFT" y la flecha roja
 function neonFallback(g, W, H) {
@@ -217,26 +204,6 @@ function neonFromImage(g, img, W, H) {
   g.shadowBlur = 0
 }
 
-// Mensaje de bienvenida en neón cursivo: blanco cálido con brillo rojo de marca
-function neonWelcome(g, W, H) {
-  const font = (s) => `${s}px "Pacifico", "Brush Script MT", cursive`
-  let size = 170
-  g.font = font(size)
-  while (g.measureText(WELCOME).width > W * 0.88 && size > 30) {
-    size -= 4
-    g.font = font(size)
-  }
-  g.textAlign = 'center'
-  g.textBaseline = 'middle'
-  g.fillStyle = '#fff4f4'
-  g.shadowColor = '#ff2a3a'
-  for (const blur of [46, 22, 8]) {
-    g.shadowBlur = blur
-    g.fillText(WELCOME, W / 2, H * 0.8)
-  }
-  g.shadowBlur = 0
-}
-
 export function makeNeonLogoTexture() {
   const W = 1600
   const H = 520
@@ -247,12 +214,11 @@ export function makeNeonLogoTexture() {
     g.clearRect(0, 0, W, H)
     if (logo) neonFromImage(g, logo, W, H)
     else neonFallback(g, W, H)
-    neonWelcome(g, W, H)
     t.needsUpdate = true
   }
   redraw()
-  // Cuando llegan el logo y la tipografía, se vuelve a dibujar
-  Promise.all([loadLogo(), loadFont()]).then(([img]) => {
+  // Cuando llega el logo, se vuelve a dibujar
+  loadLogo().then((img) => {
     logo = img
     redraw()
   })
