@@ -10,6 +10,7 @@ import { Chair } from './Decor'
 const BASE = import.meta.env.BASE_URL
 const NICO_URL = `${BASE}models/nico.glb`
 const MORE_URL = `${BASE}models/more.glb`
+const DARI_URL = `${BASE}models/dari.glb`
 // Sentado: altura de cadera sobre el piso y cuánto se corre hacia atrás del centro de la silla
 const SEAT_HIPS = 0.58
 const SIT_BACK = -0.06
@@ -212,6 +213,17 @@ export function MoreNpc(props) {
     <Boundary fallback={<CartoonMore {...props} />}>
       <Suspense fallback={null}>
         <Npc3D url={MORE_URL} holdsPaper {...props} />
+      </Suspense>
+    </Boundary>
+  )
+}
+
+// Dari: Training & Learning Head, sentada en su lugar (sin hoja)
+export function DariNpc(props) {
+  return (
+    <Boundary>
+      <Suspense fallback={null}>
+        <Npc3D url={DARI_URL} {...props} />
       </Suspense>
     </Boundary>
   )

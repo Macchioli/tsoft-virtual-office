@@ -8,9 +8,22 @@ import Interaction from './Interaction'
 import PaperModal from './PaperModal'
 import Dialogue from './Dialogue'
 import FlagSelector from './FlagSelector'
-import { DIALOGUE, DIALOGUE_AGAIN, NICO, NICO_DIALOGUE, NICO_LINK, NPC, OFFICES, PAPERS } from './data'
+import {
+  DARI,
+  DARI_CONTACT,
+  DARI_DIALOGUE,
+  DIALOGUE,
+  DIALOGUE_AGAIN,
+  NICO,
+  NICO_DIALOGUE,
+  NICO_LINK,
+  NPC,
+  OFFICES,
+  PAPERS,
+} from './data'
 
 const PAPER = PAPERS[0]
+const PEOPLE = { [NPC.id]: NPC, [NICO.id]: NICO, [DARI.id]: DARI } // a quién se puede hablarle
 const NO_COLLIDERS = []
 const NO_ROOM = { w: 16, d: 22 }
 
@@ -28,18 +41,18 @@ function CameraStart({ office }) {
 
 export default function App() {
   const controlsRef = useRef()
-  const npcRef = useRef() // grupo que recorre el raycaster (More y Nico)
+  const npcRef = useRef() // grupo que recorre el raycaster (More, Nico y Dari)
   const paperRef = useRef() // hoja en la mano de More: las manos del jugador la toman de ahí
   const busyRef = useRef(false) // lo mantiene Hands: true mientras dura la animación
 
   const [office, setOffice] = useState(null) // null = pantalla de banderas; 'ar' o 'cl'
   const [locked, setLocked] = useState(false)
   const [hoveredId, setHoveredId] = useState(null)
-  const [talking, setTalking] = useState(null) // con quién se está hablando: 'more', 'nico' o null
+  const [talking, setTalking] = useState(null) // con quién se está hablando: 'more', 'nico', 'dari' o null
   const [met, setMet] = useState(false) // ya habló con More al menos una vez
   const [heldId, setHeldId] = useState(null) // hoja que el jugador está tomando
   const [hiddenId, setHiddenId] = useState(null) // hoja que sale de la mano de More
-  const [openPaper, setOpenPaper] = useState(null) // hoja (o tarjeta de Nico) con el modal abierto
+  const [openPaper, setOpenPaper] = useState(null) // hoja con el modal abierto
 
   const cfg = office ? OFFICES[office] : null
 
@@ -70,12 +83,13 @@ export default function App() {
   }, [])
 
   const handleSelect = useCallback((id) => {
-    if (busyRef.current || (id !== NPC.id && id !== NICO.id)) return
+    if (busyRef.current || !PEOPLE[id]) return
     setTalking(id)
   }, [])
 
   // Terminó el diálogo. Con More: ofrece la hoja y arranca la secuencia de las manos.
-  // Con Nico: se abre la tarjeta con el enlace a Tsoft University y se suelta el mouse para poder usarlo.
+  // Con Nico: se abre la tarjeta con el enlace a Tsoft University. Con Dari: la tarjeta con su mail.
+  // En los dos casos se suelta el mouse para poder usar el enlace.
   const handleDialogueDone = useCallback(() => {
     const who = talking
     setTalking(null)
@@ -84,6 +98,9 @@ export default function App() {
       setHeldId(PAPER.id)
     } else if (who === NICO.id) {
       setOpenPaper(NICO_LINK)
+      controlsRef.current?.unlock()
+    } else if (who === DARI.id) {
+      setOpenPaper(DARI_CONTACT)
       controlsRef.current?.unlock()
     }
   }, [talking])
@@ -112,6 +129,7 @@ export default function App() {
 
   const moreMode = heldId || openPaper?.id === PAPER.id ? 'offer' : talking === NPC.id ? 'talk' : 'idle'
   const nicoMode = talking === NICO.id ? 'talk' : 'idle'
+  const dariMode = talking === DARI.id ? 'talk' : 'idle'
   const free = locked && !talking && !heldId
 
   return (
@@ -125,6 +143,7 @@ export default function App() {
             paperRef={paperRef}
             moreMode={moreMode}
             nicoMode={nicoMode}
+            dariMode={dariMode}
             paperHidden={hiddenId === PAPER.id}
           />
         )}
@@ -161,7 +180,7 @@ export default function App() {
         <>
           <div className={`crosshair ${hoveredId ? 'active' : ''}`} />
           {hoveredId && !heldId && (
-            <div className="hint">Clic para hablar con {hoveredId === NICO.id ? NICO.name : NPC.name}</div>
+            <div className="hint">Clic para hablar con {(PEOPLE[hoveredId] || NPC).name}</div>
           )}
         </>
       )}
@@ -169,8 +188,16 @@ export default function App() {
       {talking && (
         <Dialogue
           key={talking}
-          speaker={talking === NICO.id ? NICO.name : NPC.name}
-          lines={talking === NICO.id ? NICO_DIALOGUE : met ? DIALOGUE_AGAIN : DIALOGUE}
+          speaker={PEOPLE[talking].name}
+          lines={
+            talking === NICO.id
+              ? NICO_DIALOGUE
+              : talking === DARI.id
+                ? DARI_DIALOGUE
+                : met
+                  ? DIALOGUE_AGAIN
+                  : DIALOGUE
+          }
           onDone={handleDialogueDone}
         />
       )}

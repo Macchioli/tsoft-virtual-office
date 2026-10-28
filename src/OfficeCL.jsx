@@ -63,7 +63,7 @@ function MiniFlag({ x, z, map }) {
 // ---------- Fila de escritorios blancos con pantallas de vidrio esmerilado ----------
 const SEATS = [-3.5, -2.1, -0.7, 0.7, 2.1, 3.5]
 const BACKS = ['#2b2e32', '#2b2e32', '#8e9298', '#9b9fa5']
-const TAKEN = new Set([OFFICES.cl.npc.key, OFFICES.cl.nico.key])
+const TAKEN = new Set([OFFICES.cl.npc.key, OFFICES.cl.nico.key, OFFICES.cl.dari.key])
 const JACKETS = ['#1e2126', '#23304a', '#2a2a2d', '#3d1f1f']
 
 function Bench({ x, z, len, d, index, flag, tentMap }) {

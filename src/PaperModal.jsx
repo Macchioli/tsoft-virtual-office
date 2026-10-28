@@ -12,7 +12,12 @@ export default function PaperModal({ paper, onClose }) {
         />
         <h2>{paper.title}</h2>
         <p>{paper.body}</p>
-        <a className="modal-link" href={paper.url} target="_blank" rel="noopener noreferrer">
+        <a
+          className="modal-link"
+          href={paper.url}
+          target={paper.url.startsWith('mailto:') ? undefined : '_blank'}
+          rel="noopener noreferrer"
+        >
           Abrir en la plataforma ↗
         </a>
         <button className="modal-close" onClick={onClose}>

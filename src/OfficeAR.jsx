@@ -194,7 +194,7 @@ function Sticker({ x, z, rot, text, sub }) {
 
 // ---------- Fila de escritorios tipo bench con sillas, notebooks, termos y mates ----------
 const SEATS = [-3.9, -2.6, -1.3, 0, 1.3, 2.6, 3.9]
-const TAKEN = new Set([OFFICES.ar.npc.key, OFFICES.ar.nico.key])
+const TAKEN = new Set([OFFICES.ar.npc.key, OFFICES.ar.nico.key, OFFICES.ar.dari.key])
 const JACKETS = ['#1e2126', '#23304a', '#2a2a2d', '#3d1f1f', '#1e2126']
 
 function Bench({ x, z, len, d, index }) {

@@ -9,6 +9,9 @@ export const NPC = { id: 'more', name: 'More' }
 // Su posición está en cfg.nico de cada oficina.
 export const NICO = { id: 'nico', name: 'Nico' }
 
+// Dari: Training & Learning Head (modelo 3D en public/models/dari.glb). Sentada en su lugar (cfg.dari).
+export const DARI = { id: 'dari', name: 'Dari' }
+
 // La hoja que entrega More (solo contenido: su posición es la de su mano)
 export const PAPERS = [
   {
@@ -43,6 +46,22 @@ export const NICO_LINK = {
   title: 'Tsoft University',
   body: 'Nuestra plataforma de e-learning. Entrá cuando quieras y explorá toda la capacitación.',
   url: 'https://university.tsoftglobal.com',
+}
+
+// Diálogo de Dari (editalo a gusto). Al terminar, se abre la tarjeta con su mail.
+export const DARI_DIALOGUE = [
+  '¡Hola! Soy Dari, Training & Learning Head en Tsoft.',
+  'Estoy a cargo de la formación acá: cursos, capacitaciones y todo lo que tenga que ver con aprender y crecer en la empresa.',
+  'Podés consultarme por cualquier tema referido a formación, sin vueltas.',
+  'Te dejo mi mail para que me escribas cuando quieras. ¡Te leo!',
+]
+
+// Tarjeta con el mail de Dari (usa el mismo modal que la hoja de More y el enlace de Nico)
+export const DARI_CONTACT = {
+  id: 'dari-contact',
+  title: 'Escribile a Dari',
+  body: 'Training & Learning Head. Consultale por cualquier tema de formación: dariela.urdaneta@tsoftglobal.com',
+  url: 'mailto:dariela.urdaneta@tsoftglobal.com',
 }
 
 // Si el jugador vuelve a hablarle
@@ -84,6 +103,7 @@ const arBenches = benchesOf(arBench)
 // i: 0 = punta del pasillo de lockers (en el medio de la fila no se llega: los bancos tapan el paso)
 const arMore = seatOf(arBench, AR_SEATS_X, { b: 3, s: 1, i: 0 })
 const arNico = seatOf(arBench, AR_SEATS_X, { b: 1, s: -1, i: 0 })
+const arDari = seatOf(arBench, AR_SEATS_X, { b: 2, s: 1, i: 0 })
 const arStorage = [5.1, 1.3, -2.5].map((z, i) => ({ id: `s${i}`, x: arBench.x, z, w: 8, d: 0.5 }))
 const arNook = {
   table: { x: -6.1, z: -9.4, w: 1.5, d: 0.8 },
@@ -107,6 +127,7 @@ const ar = {
   ...arW,
   npc: arMore,
   nico: arNico,
+  dari: arDari,
   corridorX: -4.2, // límite entre las baldosas del pasillo y la alfombra
   lockers: { z0: 10.2, cols: 24, rows: 4, cellW: 0.5, cellH: 0.55, depth: 0.5 },
   bench: arBench,
@@ -160,6 +181,7 @@ const clBench = { x: -1.3, len: 8.6, d: 1.4, rows: [7.8, 4.2, 0.6, -3.0, -6.6] }
 const clBenches = benchesOf(clBench)
 const clMore = seatOf(clBench, CL_SEATS_X, { b: 3, s: -1, i: 5 })
 const clNico = seatOf(clBench, CL_SEATS_X, { b: 1, s: -1, i: 5 })
+const clDari = seatOf(clBench, CL_SEATS_X, { b: 2, s: -1, i: 5 })
 // Cajoneras blancas al final de cada fila, del lado del pasillo oscuro
 const clPedestals = clBench.rows.map((z, i) => ({
   id: `p${i}`,
@@ -190,6 +212,7 @@ const cl = {
   ...clW,
   npc: clMore,
   nico: clNico,
+  dari: clDari,
   corridorX: 4.2, // límite entre la alfombra de los escritorios y el pasillo oscuro
   bench: clBench,
   benches: clBenches,
