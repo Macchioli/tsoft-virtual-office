@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Canvas, useThree } from '@react-three/fiber'
 import { PointerLockControls } from '@react-three/drei'
 import Scene from './Scene'
@@ -21,10 +21,8 @@ import {
   NICO_LINK,
   NPC,
   OFFICES,
-  PAPERS,
 } from './data'
 
-const PAPER = PAPERS[0]
 const PEOPLE = { [NPC.id]: NPC, [NICO.id]: NICO, [DARI.id]: DARI } // a quién se puede hablarle
 // Lo que dice la mirilla al apuntar a cada cosa
 const HINTS = { coffee: 'Clic para tomar un café', arcade: 'Clic para jugar al Pong' }
@@ -46,30 +44,17 @@ function CameraStart({ office }) {
 export default function App() {
   const controlsRef = useRef()
   const npcRef = useRef() // grupo que recorre el raycaster (More, Nico y Dari)
-  const paperRef = useRef() // hoja en la mano de More: las manos del jugador la toman de ahí
-  const busyRef = useRef(false) // lo mantiene Hands: true mientras dura la animación
 
   const [office, setOffice] = useState(null) // null = pantalla de banderas; 'ar' o 'cl'
   const [locked, setLocked] = useState(false)
   const [hoveredId, setHoveredId] = useState(null)
   const [talking, setTalking] = useState(null) // con quién se está hablando: 'more', 'nico', 'dari' o null
   const [met, setMet] = useState(false) // ya habló con More al menos una vez
-  const [heldId, setHeldId] = useState(null) // hoja que el jugador está tomando
-  const [hiddenId, setHiddenId] = useState(null) // hoja que sale de la mano de More
-  const [openPaper, setOpenPaper] = useState(null) // hoja con el modal abierto
+  const [openPaper, setOpenPaper] = useState(null) // tarjeta con el modal abierto (Nico o Dari)
   const [drinking, setDrinking] = useState(false) // tomando un café (animación)
   const [playing, setPlaying] = useState(false) // jugando al Pong del arcade
 
   const cfg = office ? OFFICES[office] : null
-
-  // La hoja que reciben las manos: su posición es la de la hoja en la mano de More
-  const heldPaper = useMemo(
-    () =>
-      heldId
-        ? { ...PAPER, getWorldPosition: (v) => paperRef.current?.getWorldPosition(v) }
-        : null,
-    [heldId]
-  )
 
   // Clic en una bandera: entra a esa oficina y captura el mouse
   const handleOffice = useCallback((id) => {
@@ -83,21 +68,18 @@ export default function App() {
     setHoveredId(null)
     setTalking(null)
     setMet(false)
-    setHeldId(null)
-    setHiddenId(null)
     setOpenPaper(null)
     setDrinking(false)
     setPlaying(false)
   }, [])
 
   const handleSelect = useCallback((id) => {
-    if (busyRef.current) return
     if (id === 'coffee') setDrinking(true)
     else if (id === 'arcade') setPlaying(true)
     else if (PEOPLE[id]) setTalking(id)
   }, [])
 
-  // Terminó el diálogo. Con More: ofrece la hoja y arranca la secuencia de las manos.
+  // Terminó el diálogo. Con More: solo queda registrado que ya se conocieron.
   // Con Nico: se abre la tarjeta con el enlace a Tsoft University. Con Dari: la tarjeta con su mail.
   // En los dos casos se suelta el mouse para poder usar el enlace.
   const handleDialogueDone = useCallback(() => {
@@ -105,7 +87,6 @@ export default function App() {
     setTalking(null)
     if (who === NPC.id) {
       setMet(true)
-      setHeldId(PAPER.id)
     } else if (who === NICO.id) {
       setOpenPaper(NICO_LINK)
       controlsRef.current?.unlock()
@@ -115,16 +96,9 @@ export default function App() {
     }
   }, [talking])
 
-  // Las manos ya levantaron la hoja: abrimos el modal y soltamos el mouse para poder usar el link
-  const handleGrabbed = useCallback((paper) => {
-    setOpenPaper(paper)
-    controlsRef.current?.unlock()
-  }, [])
-
-  // Al cerrar, la hoja vuelve a More
+  // Cierra la tarjeta de Nico o de Dari
   const closePaper = useCallback((relock) => {
     setOpenPaper(null)
-    setHeldId(null)
     if (relock) controlsRef.current?.lock() // el clic en el botón cuenta como gesto del usuario
   }, [])
 
@@ -137,10 +111,10 @@ export default function App() {
     return () => window.removeEventListener('keydown', onKey)
   }, [openPaper, closePaper])
 
-  const moreMode = heldId || openPaper?.id === PAPER.id ? 'offer' : talking === NPC.id ? 'talk' : 'idle'
+  const moreMode = talking === NPC.id ? 'talk' : 'idle'
   const nicoMode = talking === NICO.id ? 'talk' : 'idle'
   const dariMode = talking === DARI.id ? 'talk' : 'idle'
-  const free = locked && !talking && !heldId && !drinking && !playing
+  const free = locked && !talking && !drinking && !playing
 
   // La animación del café dura 3,4 s
   useEffect(() => {
@@ -157,11 +131,9 @@ export default function App() {
             key={office}
             office={office}
             papersRef={npcRef}
-            paperRef={paperRef}
             moreMode={moreMode}
             nicoMode={nicoMode}
             dariMode={dariMode}
-            paperHidden={hiddenId === PAPER.id}
           />
         )}
         <CameraStart office={office} />
@@ -171,12 +143,7 @@ export default function App() {
           room={cfg ? cfg.room : NO_ROOM}
         />
         {/* Hands tiene que ir después de Player */}
-        <Hands
-          paper={heldPaper}
-          busyRef={busyRef}
-          onGrabbed={handleGrabbed}
-          onHidePaper={setHiddenId}
-        />
+        <Hands />
         <Interaction
           targetsRef={npcRef}
           enabled={free}
@@ -197,7 +164,7 @@ export default function App() {
       {locked && !talking && !drinking && !playing && (
         <>
           <div className={`crosshair ${hoveredId ? 'active' : ''}`} />
-          {hoveredId && !heldId && (
+          {hoveredId && (
             <div className="hint">
               {HINTS[hoveredId] || `Clic para hablar con ${(PEOPLE[hoveredId] || NPC).name}`}
             </div>

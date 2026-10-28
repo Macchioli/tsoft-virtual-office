@@ -12,16 +12,6 @@ export const NICO = { id: 'nico', name: 'Nico' }
 // Dari: Training & Learning Head (modelo 3D en public/models/dari.glb). Sentada en su lugar (cfg.dari).
 export const DARI = { id: 'dari', name: 'Dari' }
 
-// La hoja que entrega More (solo contenido: su posición es la de su mano)
-export const PAPERS = [
-  {
-    id: 'p1',
-    title: 'Cursos obligatorios',
-    body: 'Acá vas a encontrar los cursos obligatorios que tenés que completar.',
-    url: 'https://example.com/cursos-obligatorios',
-  },
-]
-
 export const SIGN_TEXT = 'Cursos obligatorios'
 
 // Diálogo de More (rioplatense). Se avanza con clic / Espacio / Enter / E.
@@ -29,7 +19,7 @@ export const DIALOGUE = [
   '¡Hola! Soy More. ¡Bienvenido/a Tsofer! Te estaba esperando.',
   'Acá en Tsoft aprender es parte del día a día, y en T University tenés toda la capacitación.',
   'Para arrancar, tenés que completar los cursos obligatorios. Es lo primero que hacemos todos.',
-  'Te dejé todo en una hoja. ¡Tomá, es toda tuya!',
+  '¡Cualquier cosa que necesites, acá estoy! Y pasá a saludar a Nico y a Dari.',
 ]
 
 // Diálogo de Nico (editalo a gusto). Al terminar, se abre el enlace a Tsoft University.
@@ -40,7 +30,7 @@ export const NICO_DIALOGUE = [
   'Te dejo el enlace para que entres cuando quieras. ¡Cualquier duda, me preguntás!',
 ]
 
-// Tarjeta con el enlace que se abre después de hablar con Nico (usa el mismo modal que la hoja de More)
+// Tarjeta con el enlace que se abre después de hablar con Nico (usa PaperModal)
 export const NICO_LINK = {
   id: 'nico-link',
   title: 'Tsoft University',
@@ -51,21 +41,21 @@ export const NICO_LINK = {
 // Diálogo de Dari (editalo a gusto). Al terminar, se abre la tarjeta con su mail.
 export const DARI_DIALOGUE = [
   '¡Hola! Soy Dari, Training & Learning Head en Tsoft.',
-  'Estoy a cargo de la formación acá: cursos, capacitaciones y todo lo que tenga que ver con aprender y crecer en la empresa.',
-  'Podés consultarme por cualquier tema referido a formación, sin vueltas.',
-  'Te dejo mi mail para que me escribas cuando quieras. ¡Te leo!',
+  'Estoy a cargo de la formación aquí: cursos, capacitaciones y todo lo relacionado con aprender y crecer en la empresa.',
+  'Puedes consultarme sobre cualquier tema de formación, sin rodeos.',
+  'Te dejo mi correo para que me escribas cuando quieras. ¡Te leo!',
 ]
 
-// Tarjeta con el mail de Dari (usa el mismo modal que la hoja de More y el enlace de Nico)
+// Tarjeta con el mail de Dari (usa el mismo modal que el enlace de Nico)
 export const DARI_CONTACT = {
   id: 'dari-contact',
-  title: 'Escribile a Dari',
-  body: 'Training & Learning Head. Consultale por cualquier tema de formación: dariela.urdaneta@tsoftglobal.com',
+  title: 'Escríbele a Dari',
+  body: 'Training & Learning Head. Consúltale cualquier tema de formación: dariela.urdaneta@tsoftglobal.com',
   url: 'mailto:dariela.urdaneta@tsoftglobal.com',
 }
 
 // Si el jugador vuelve a hablarle
-export const DIALOGUE_AGAIN = ['¿Se te perdió la hoja? Quedate tranquilo/a, tomá otra vez.']
+export const DIALOGUE_AGAIN = ['¡Hola de nuevo! Cualquier duda, acá estoy.']
 
 // ---------------------------------------------------------------------
 // Oficinas. Cada una define su tamaño, dónde arranca el jugador, sus muebles y sus colisiones.

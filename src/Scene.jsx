@@ -1,20 +1,13 @@
-import { useMemo } from 'react'
 import { DARI, NICO, NPC, OFFICES } from './data'
-import { makePaperTexture } from './textures'
 import { DariNpc, MoreNpc, NicoNpc } from './Npc3D'
 import { Ceiling, Lights, PlantWall } from './Decor'
 import OfficeAR from './OfficeAR'
 import OfficeCL from './OfficeCL'
 import { BreakCorner, BreakTargets } from './Break'
 
-// Textura de la hoja (con el logo arriba). También la usa Hands.jsx.
-export function usePaperTexture() {
-  return useMemo(makePaperTexture, [])
-}
-
 // office: 'ar' o 'cl'. Cada oficina trae sus muebles; la pared del fondo (enredadera con el logo)
 // es opcional por oficina: se saca con plantWall: false en su config.
-export default function Scene({ office, papersRef, paperRef, moreMode, nicoMode = 'idle', dariMode = 'idle', paperHidden }) {
+export default function Scene({ office, papersRef, moreMode, nicoMode = 'idle', dariMode = 'idle' }) {
   const cfg = OFFICES[office]
   const Office = office === 'cl' ? OfficeCL : OfficeAR
   return (
@@ -46,16 +39,7 @@ export default function Scene({ office, papersRef, paperRef, moreMode, nicoMode 
       {/* More, Nico y Dari, sentados en sus sillas: el grupo es el que recorre el raycaster */}
       <group ref={papersRef}>
         <BreakTargets office={office} />
-        <MoreNpc
-          id={NPC.id}
-          x={cfg.npc.x}
-          z={cfg.npc.z}
-          rot={cfg.npc.rot}
-          seated
-          mode={moreMode}
-          paperRef={paperRef}
-          paperHidden={paperHidden}
-        />
+        <MoreNpc id={NPC.id} x={cfg.npc.x} z={cfg.npc.z} rot={cfg.npc.rot} seated mode={moreMode} />
         <NicoNpc id={NICO.id} x={cfg.nico.x} z={cfg.nico.z} rot={cfg.nico.rot} seated mode={nicoMode} />
         <DariNpc id={DARI.id} x={cfg.dari.x} z={cfg.dari.z} rot={cfg.dari.rot} seated mode={dariMode} />
       </group>

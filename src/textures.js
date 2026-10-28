@@ -44,34 +44,6 @@ function loadImage(src) {
 export const loadLogo = () => loadImage('/tsoft-logo.png') // logo de Tsoft
 export const loadUniLogo = () => loadImage('/tuniversity-logo.png') // logo de T University
 
-// ---------- Hoja de papel (con el logo arriba cuando está disponible) ----------
-export function makePaperTexture() {
-  const [c, g] = makeCanvas(256, 180)
-  const draw = (logo) => {
-    g.fillStyle = '#fbfaf5'
-    g.fillRect(0, 0, 256, 180)
-    if (logo) {
-      const h = 30
-      g.drawImage(logo, 20, 14, (logo.width / logo.height) * h, h)
-    } else {
-      g.fillStyle = '#2b2b2b'
-      g.fillRect(20, 20, 90, 10)
-    }
-    g.fillStyle = '#b9b9b9'
-    for (let y = 60; y < 160; y += 16) {
-      g.fillRect(20, y, y % 32 ? 176 : 216, 6)
-    }
-  }
-  draw(null)
-  const t = toTexture(c)
-  loadLogo().then((img) => {
-    if (!img) return
-    draw(img)
-    t.needsUpdate = true
-  })
-  return t
-}
-
 // ---------- Cartel "Cursos obligatorios": placa blanca con el logo de T University arriba ----------
 export function makeSignTexture(text) {
   const W = 1024

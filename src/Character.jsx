@@ -1,8 +1,8 @@
 import { useMemo, useRef } from 'react'
-import { DoubleSide, MathUtils } from 'three'
+import { MathUtils } from 'three'
 import { useFrame } from '@react-three/fiber'
-import { Blob, OUTLINE, useToonGradient } from './Toon'
-import { makeFaceTexture, makePaperTexture } from './textures'
+import { Blob, useToonGradient } from './Toon'
+import { makeFaceTexture } from './textures'
 
 const SKIN = '#e9b595'
 const HAIR = '#2a1a12'
@@ -53,14 +53,11 @@ function Arm({ x, armRef, elbowRef, grad, children }) {
 
 /**
  * x, z, rot: posición y orientación base (en el mundo)
- * mode: 'idle' | 'talk' | 'offer'  (esperando / conversando / ofreciendo la hoja)
- * paperRef: ref a la hoja de su mano (las manos del jugador la toman de ahí)
- * paperHidden: oculta la hoja (cuando el jugador la tiene en sus manos)
+ * mode: 'idle' | 'talk'  (esperando / conversando)
  */
-export default function More({ id, x, z, rot, mode, paperRef, paperHidden }) {
+export default function More({ id, x, z, rot, mode }) {
   const grad = useToonGradient()
   const faceMap = useMemo(makeFaceTexture, [])
-  const paperMap = useMemo(makePaperTexture, [])
 
   const root = useRef()
   const torso = useRef()
@@ -78,7 +75,7 @@ export default function More({ id, x, z, rot, mode, paperRef, paperHidden }) {
     const t = p.t
 
     // Poses objetivo según lo que esté haciendo
-    let shR = -0.5 // brazo derecho: sostiene la hoja a la altura del pecho
+    let shR = -0.5 // brazo derecho: flexionado a la altura del pecho
     let elR = -1.2
     let shL = 0.05
     let elL = -0.15
@@ -88,10 +85,6 @@ export default function More({ id, x, z, rot, mode, paperRef, paperHidden }) {
       shL = -0.75 + Math.sin(t * 2.4) * 0.25 // gesticula con la mano izquierda
       elL = -0.9 + Math.sin(t * 2.4 + 1) * 0.3
       shR = -0.5 + Math.sin(t * 1.6) * 0.05
-    } else if (mode === 'offer') {
-      face = true
-      shR = -1.35 // estira el brazo derecho con la hoja
-      elR = -0.25
     }
     p.shR = MathUtils.damp(p.shR, shR, 6, dt)
     p.elR = MathUtils.damp(p.elR, elR, 6, dt)
@@ -102,7 +95,7 @@ export default function More({ id, x, z, rot, mode, paperRef, paperHidden }) {
     armL.current.rotation.x = p.shL
     elbowL.current.rotation.x = p.elL
 
-    // El cuerpo se gira hacia el jugador cuando conversa u ofrece la hoja
+    // El cuerpo se gira hacia el jugador cuando conversa
     const dx = camera.position.x - x
     const dz = camera.position.z - z
     const toPlayer = Math.atan2(dx, dz)
@@ -204,20 +197,8 @@ export default function More({ id, x, z, rot, mode, paperRef, paperHidden }) {
         ))}
       </group>
 
-      {/* Brazo derecho de More (lado -x): sostiene la hoja */}
-      <Arm x={-0.215} armRef={armR} elbowRef={elbowR} grad={grad}>
-        {/* La hoja: el centro queda donde las manos del jugador la agarran */}
-        <group ref={paperRef} visible={!paperHidden} position={[0, -0.36, 0.13]} rotation={[HALF_PI, 0, 0]}>
-          <mesh position={[0, 0, -0.002]}>
-            <planeGeometry args={[0.44, 0.32]} />
-            <meshBasicMaterial color={OUTLINE} side={DoubleSide} />
-          </mesh>
-          <mesh>
-            <planeGeometry args={[0.42, 0.3]} />
-            <meshStandardMaterial map={paperMap} side={DoubleSide} />
-          </mesh>
-        </group>
-      </Arm>
+      {/* Brazo derecho de More (lado -x) */}
+      <Arm x={-0.215} armRef={armR} elbowRef={elbowR} grad={grad} />
 
       {/* Brazo izquierdo (lado +x) */}
       <Arm x={0.215} armRef={armL} elbowRef={elbowL} grad={grad} />

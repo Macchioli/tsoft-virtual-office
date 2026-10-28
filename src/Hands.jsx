@@ -1,17 +1,11 @@
-import { useEffect, useMemo, useRef } from 'react'
-import { DoubleSide, MathUtils, Vector3 } from 'three'
+import { useRef } from 'react'
+import { MathUtils, Vector3 } from 'three'
 import { useFrame, useThree } from '@react-three/fiber'
-import { makePaperTexture } from './textures'
 
 // =====================================================================
 // Manos en primera persona (detalladas): palma, nudillos, 3 falanges por dedo, pulgar,
-// uñas, muñeca y manga de camisa. Están pegadas a la cámara.
-//
-// API (la misma de siempre):
-//   paper      -> hoja que se está tomando ({ id, getWorldPosition(v) }) o null
-//   busyRef    -> ref: true mientras dura la animación
-//   onGrabbed  -> se llama cuando las manos ya sostienen la hoja delante de la cara
-//   onHidePaper-> (id | null) oculta / vuelve a mostrar la hoja en la mano de More
+// uñas, muñeca y manga de camisa. Están pegadas a la cámara, en reposo, con balanceo al
+// caminar y retraso al girar la cámara.
 // Tiene que ir DESPUÉS de <Player /> en el Canvas.
 // =====================================================================
 
@@ -22,9 +16,6 @@ const CUFF = { color: '#f1f2f4', roughness: 0.7 }
 
 // Poses (en el espacio de la cámara: +x derecha, +y arriba, -z adelante)
 const IDLE = { pos: [0.2, -0.28, -0.42], rot: [0.28, 0.28, -0.18] }
-const READ_PAPER = [0, -0.1, -0.46]
-const GRIP = { pos: [0.23, -0.2, -0.43], rot: [0.5, 0.6, -0.7] }
-const REACH_MAX = 0.8
 
 // ---------- Un dedo: 3 falanges con nudillos. curl 0 = estirado, 1 = cerrado ----------
 function Finger({ x, z = -0.092, lens, radius, curl, spread = 0, nail = true, baseRot = 0 }) {
@@ -171,79 +162,27 @@ function Hand({ curl, thumb }) {
   )
 }
 
-// ---------- La hoja en las manos ----------
-function HeldPaper({ groupRef }) {
-  const map = useMemo(makePaperTexture, [])
-  return (
-    <group ref={groupRef} visible={false}>
-      <mesh position={[0, 0, -0.002]}>
-        <planeGeometry args={[0.44, 0.32]} />
-        <meshBasicMaterial color="#111111" side={DoubleSide} />
-      </mesh>
-      <mesh>
-        <planeGeometry args={[0.42, 0.3]} />
-        <meshStandardMaterial map={map} side={DoubleSide} emissive="#ffffff" emissiveMap={map} emissiveIntensity={0.35} />
-      </mesh>
-    </group>
-  )
-}
-
-export default function Hands({ paper, busyRef, onGrabbed, onHidePaper }) {
+export default function Hands() {
   const camera = useThree((s) => s.camera)
   const rig = useRef()
   const rGroup = useRef()
   const lGroup = useRef()
-  const paperGroup = useRef()
-  const curlR = useRef(0.3)
-  const curlL = useRef(0.3)
-  const thumbR = useRef(0.2)
-  const thumbL = useRef(0.2)
+  // Dedos semicerrados en reposo
+  const curl = useRef(0.3)
+  const thumb = useRef(0.2)
 
   const st = useRef({
-    phase: 'idle',
-    t: 0,
-    target: new Vector3(0, -0.2, -0.5), // adónde se estira la mano para tomar la hoja
-    p: { r: new Vector3(...IDLE.pos), l: new Vector3(-IDLE.pos[0], IDLE.pos[1] - 0.02, IDLE.pos[2]) },
-    rot: { r: [...IDLE.rot], l: [IDLE.rot[0], -IDLE.rot[1], -IDLE.rot[2]] },
-    paperPos: new Vector3(0, -0.5, -0.3),
-    paperScale: 0,
     bob: 0,
     lastPos: new Vector3().copy(camera.position),
     lastYaw: 0,
     lastPitch: 0,
     swayX: 0,
     swayY: 0,
-    grabbed: false,
   })
-  const cb = useRef({ onGrabbed, onHidePaper, paper })
-  cb.current = { onGrabbed, onHidePaper, paper }
-  const tmp = useMemo(() => new Vector3(), [])
-
-  // Cuando llega o se va la hoja, arranca (o termina) la secuencia
-  useEffect(() => {
-    const s = st.current
-    if (paper) {
-      const v = new Vector3()
-      paper.getWorldPosition(v)
-      camera.updateMatrixWorld()
-      s.target.copy(camera.worldToLocal(v))
-      if (s.target.length() > REACH_MAX) s.target.setLength(REACH_MAX)
-      s.target.y -= 0.03
-      s.phase = 'reach'
-      s.t = 0
-      s.grabbed = false
-      if (busyRef) busyRef.current = true
-    } else if (s.phase !== 'idle') {
-      s.phase = 'release'
-      s.t = 0
-      if (busyRef) busyRef.current = true
-    }
-  }, [paper, camera, busyRef])
 
   useFrame((_, delta) => {
     const dt = Math.min(delta, 0.05)
     const s = st.current
-    s.t += dt
 
     // Pegado a la cámara
     rig.current.position.copy(camera.position)
@@ -263,101 +202,21 @@ export default function Hands({ paper, busyRef, onGrabbed, onHidePaper }) {
     const bobY = Math.sin(s.bob) * 0.006 * (0.35 + moving)
     const bobX = Math.cos(s.bob * 0.5) * 0.005 * moving
 
-    // Objetivos por fase
-    let tr = [IDLE.pos[0] + bobX + s.swayX, IDLE.pos[1] + bobY + s.swayY, IDLE.pos[2]]
-    let tl = [-IDLE.pos[0] + bobX + s.swayX, IDLE.pos[1] - 0.02 + bobY * 0.8 + s.swayY, IDLE.pos[2]]
-    let rr = IDLE.rot
-    let rl = [IDLE.rot[0], -IDLE.rot[1], -IDLE.rot[2]]
-    let cR = 0.3
-    let cL = 0.3
-    let tR = 0.2
-    let paperTarget = s.paperPos
-    let paperScaleTarget = 0
-
-    if (s.phase === 'reach') {
-      tr = [s.target.x, s.target.y, s.target.z]
-      rr = [0.1, 0.08, -0.05]
-      cR = s.t < 0.55 ? 0 : 0.72
-      tR = s.t < 0.55 ? 0 : 0.55
-      if (s.t > 0.85) {
-        cb.current.onHidePaper?.(cb.current.paper?.id)
-        s.paperPos.copy(s.p.r).add(tmp.set(-0.02, 0.04, -0.02))
-        s.paperScale = 0.55
-        s.phase = 'bring'
-        s.t = 0
-      }
-    } else if (s.phase === 'bring' || s.phase === 'hold') {
-      const sway = s.phase === 'hold' ? Math.sin(s.t * 1.3) * 0.004 : 0
-      tr = [GRIP.pos[0], GRIP.pos[1] + sway, GRIP.pos[2]]
-      tl = [-GRIP.pos[0], GRIP.pos[1] + sway, GRIP.pos[2]]
-      rr = GRIP.rot
-      rl = [GRIP.rot[0], -GRIP.rot[1], -GRIP.rot[2]]
-      cR = 0.55
-      cL = 0.55
-      tR = 0.45
-      paperTarget = tmp.set(READ_PAPER[0], READ_PAPER[1] + sway, READ_PAPER[2])
-      paperScaleTarget = 1
-      if (s.phase === 'bring' && s.t > 0.9) {
-        s.phase = 'hold'
-        s.t = 0
-        if (busyRef) busyRef.current = false
-        if (!s.grabbed) {
-          s.grabbed = true
-          cb.current.onGrabbed?.(cb.current.paper)
-        }
-      }
-    } else if (s.phase === 'release') {
-      paperTarget = tmp.set(0, -0.45, -0.3)
-      paperScaleTarget = 0
-      if (s.t > 0.6) {
-        cb.current.onHidePaper?.(null) // la hoja vuelve a la mano de More
-        s.phase = 'idle'
-        s.t = 0
-        if (busyRef) busyRef.current = false
-      }
-    }
-
-    const k = s.phase === 'reach' ? 8 : 9
-    s.p.r.set(MathUtils.damp(s.p.r.x, tr[0], k, dt), MathUtils.damp(s.p.r.y, tr[1], k, dt), MathUtils.damp(s.p.r.z, tr[2], k, dt))
-    s.p.l.set(MathUtils.damp(s.p.l.x, tl[0], k, dt), MathUtils.damp(s.p.l.y, tl[1], k, dt), MathUtils.damp(s.p.l.z, tl[2], k, dt))
-    for (let i = 0; i < 3; i++) {
-      s.rot.r[i] = MathUtils.damp(s.rot.r[i], rr[i], k, dt)
-      s.rot.l[i] = MathUtils.damp(s.rot.l[i], rl[i], k, dt)
-    }
-    curlR.current = MathUtils.damp(curlR.current, cR, 12, dt)
-    curlL.current = MathUtils.damp(curlL.current, cL, 12, dt)
-    thumbR.current = MathUtils.damp(thumbR.current, tR, 12, dt)
-    thumbL.current = MathUtils.damp(thumbL.current, tR, 12, dt)
-
-    rGroup.current.position.copy(s.p.r)
-    rGroup.current.rotation.set(s.rot.r[0], s.rot.r[1], s.rot.r[2])
-    lGroup.current.position.copy(s.p.l)
-    lGroup.current.rotation.set(s.rot.l[0], s.rot.l[1], s.rot.l[2])
-
-    // La hoja
-    s.paperPos.set(
-      MathUtils.damp(s.paperPos.x, paperTarget.x, 8, dt),
-      MathUtils.damp(s.paperPos.y, paperTarget.y, 8, dt),
-      MathUtils.damp(s.paperPos.z, paperTarget.z, 8, dt)
-    )
-    s.paperScale = MathUtils.damp(s.paperScale, paperScaleTarget, 8, dt)
-    const showPaper = s.phase === 'bring' || s.phase === 'hold' || (s.phase === 'release' && s.paperScale > 0.02)
-    paperGroup.current.visible = showPaper
-    paperGroup.current.position.copy(s.paperPos)
-    paperGroup.current.scale.setScalar(Math.max(s.paperScale, 0.001))
-    paperGroup.current.rotation.set(-0.28, 0, 0)
+    rGroup.current.position.set(IDLE.pos[0] + bobX + s.swayX, IDLE.pos[1] + bobY + s.swayY, IDLE.pos[2])
+    rGroup.current.rotation.set(IDLE.rot[0], IDLE.rot[1], IDLE.rot[2])
+    lGroup.current.position.set(-IDLE.pos[0] + bobX + s.swayX, IDLE.pos[1] - 0.02 + bobY * 0.8 + s.swayY, IDLE.pos[2])
+    lGroup.current.rotation.set(IDLE.rot[0], -IDLE.rot[1], -IDLE.rot[2])
   })
 
   return (
     <group ref={rig}>
       <pointLight position={[0, 0.25, 0.1]} intensity={0.9} distance={1.6} color="#fff3e6" />
       <group ref={rGroup}>
-        <Hand curl={curlR} thumb={thumbR} />
+        <Hand curl={curl} thumb={thumb} />
       </group>
       <group ref={lGroup} scale={[-1, 1, 1]}>
-        <Hand curl={curlL} thumb={thumbL} />
+        <Hand curl={curl} thumb={thumb} />
       </group>
-      <HeldPaper groupRef={paperGroup} />
     </group>
   )
 }

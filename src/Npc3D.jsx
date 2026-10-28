@@ -1,9 +1,8 @@
 import { Component, Suspense, useEffect, useMemo, useRef } from 'react'
-import { DoubleSide, Euler, MathUtils, Quaternion, Vector3, AnimationMixer } from 'three'
+import { Euler, MathUtils, Quaternion, Vector3, AnimationMixer } from 'three'
 import { useFrame } from '@react-three/fiber'
 import { useGLTF } from '@react-three/drei'
 import { clone } from 'three/examples/jsm/utils/SkeletonUtils.js'
-import { makePaperTexture } from './textures'
 import CartoonMore from './Character'
 import { Chair } from './Decor'
 
@@ -41,37 +40,16 @@ function bend(bone, rootObj, angle) {
   bone.quaternion.copy(_pq.invert().multiply(_q.multiply(_wq)))
 }
 
-// Hoja en la mano de More. El grupo (paperRef) es el que leen las manos del jugador.
-function Paper({ paperRef, hidden }) {
-  const map = useMemo(makePaperTexture, [])
-  return (
-    <group ref={paperRef} visible={!hidden}>
-      <group rotation={[-0.3, 0, 0]}>
-        <mesh position={[0, 0, -0.002]}>
-          <planeGeometry args={[0.44, 0.32]} />
-          <meshBasicMaterial color="#111111" side={DoubleSide} />
-        </mesh>
-        <mesh>
-          <planeGeometry args={[0.42, 0.3]} />
-          <meshStandardMaterial map={map} side={DoubleSide} />
-        </mesh>
-      </group>
-    </group>
-  )
-}
-
 /**
  * Personaje 3D (GLB de Avaturn, huesos tipo Mixamo).
- * mode: 'idle' | 'talk' | 'offer'
+ * mode: 'idle' | 'talk'
  * seated: sentado en una silla (x, z = centro de la silla; rot = hacia dónde mira)
- * holdsPaper: si true, la mano derecha sostiene la hoja (paperRef) y la estira en 'offer'
  */
-function Npc3D({ url, id, x, z, rot, mode, seated = false, holdsPaper = false, paperRef, paperHidden }) {
+function Npc3D({ url, id, x, z, rot, mode, seated = false }) {
   const gltf = useGLTF(url)
   const model = useMemo(() => clone(gltf.scene), [gltf.scene])
   const root = useRef()
-  const localPaper = useRef()
-  const pose = useRef({ t: 0, yaw: rot, headYaw: 0, talk: 0, offer: 0, drop: null })
+  const pose = useRef({ t: 0, yaw: rot, headYaw: 0, talk: 0, drop: null })
   const figure = useRef()
   const tmp = useMemo(() => new Vector3(), [])
 
@@ -104,9 +82,9 @@ function Npc3D({ url, id, x, z, rot, mode, seated = false, holdsPaper = false, p
     const dx = camera.position.x - x
     const dz = camera.position.z - z
     const toPlayer = Math.atan2(dx, dz)
-    const facing = mode === 'talk' || mode === 'offer'
+    const facing = mode === 'talk'
 
-    // El cuerpo se gira hacia el jugador cuando conversa o ofrece la hoja.
+    // El cuerpo se gira hacia el jugador cuando conversa.
     // Sentado: la silla gira hasta ±2.6 rad hacia el jugador (no da la vuelta completa)
     const aim = facing ? (seated ? rot + MathUtils.clamp(angleDiff(toPlayer, rot), -2.6, 2.6) : toPlayer) : rot
     p.yaw += angleDiff(aim, p.yaw) * Math.min(1, dt * 6)
@@ -117,7 +95,6 @@ function Npc3D({ url, id, x, z, rot, mode, seated = false, holdsPaper = false, p
     const rel = near ? MathUtils.clamp(angleDiff(toPlayer, p.yaw), -0.8, 0.8) : 0
     p.headYaw = MathUtils.damp(p.headYaw, rel, 5, dt)
     p.talk = MathUtils.damp(p.talk, mode === 'talk' ? 1 : 0, 5, dt)
-    p.offer = MathUtils.damp(p.offer, mode === 'offer' ? 1 : 0, 6, dt)
 
     // Si algún gesto sale en el eje equivocado, ajustá los signos / ejes de abajo
     twist(bones.Head, 0, p.headYaw * 0.6, 0)
@@ -141,30 +118,13 @@ function Npc3D({ url, id, x, z, rot, mode, seated = false, holdsPaper = false, p
       }
       twist(bones.Spine, 0.05, 0, 0)
     }
-    if (holdsPaper) {
-      // Brazo derecho: sostiene la hoja con el antebrazo flexionado; al ofrecerla estira el brazo
-      bend(bones.RightArm, r, -0.35 - p.offer * (seated ? 0.8 : 1.0))
-      bend(bones.RightForeArm, r, -1.3 + p.offer * 1.05)
-      // Brazo izquierdo: sentada, descansa sobre el escritorio y gesticula un poco al hablar
-      bend(bones.LeftArm, r, (seated ? -0.5 : 0) + p.talk * -0.35)
-      bend(bones.LeftForeArm, r, (seated ? -0.9 : 0) + p.talk * (-0.9 + Math.sin(p.t * 2.4) * 0.3))
-    } else {
-      // Gesticula con el antebrazo derecho mientras habla (sentado, los dos brazos van sobre el escritorio)
-      if (seated) {
-        bend(bones.LeftArm, r, -0.5)
-        bend(bones.LeftForeArm, r, -0.9)
-        bend(bones.RightArm, r, -0.5 - p.talk * 0.15)
-        bend(bones.RightForeArm, r, -0.9 + p.talk * Math.sin(p.t * 2.4) * 0.3)
-      } else bend(bones.RightForeArm, r, p.talk * (-0.9 + Math.sin(p.t * 2.4) * 0.3))
-    }
-
-    // La hoja sigue a la mano derecha
-    if (holdsPaper && bones.RightHand && localPaper.current) {
-      root.current.updateWorldMatrix(true, true)
-      bones.RightHand.getWorldPosition(tmp)
-      root.current.worldToLocal(tmp)
-      localPaper.current.position.set(tmp.x, tmp.y + 0.03, tmp.z + 0.11)
-    }
+    // Gesticula con el antebrazo derecho mientras habla (sentado, los dos brazos van sobre el escritorio)
+    if (seated) {
+      bend(bones.LeftArm, r, -0.5)
+      bend(bones.LeftForeArm, r, -0.9)
+      bend(bones.RightArm, r, -0.5 - p.talk * 0.15)
+      bend(bones.RightForeArm, r, -0.9 + p.talk * Math.sin(p.t * 2.4) * 0.3)
+    } else bend(bones.RightForeArm, r, p.talk * (-0.9 + Math.sin(p.t * 2.4) * 0.3))
   })
 
   return (
@@ -174,11 +134,6 @@ function Npc3D({ url, id, x, z, rot, mode, seated = false, holdsPaper = false, p
       <group ref={figure}>
         <primitive object={model} />
       </group>
-      {holdsPaper && (
-        <group ref={localPaper}>
-          <Paper paperRef={paperRef} hidden={paperHidden} />
-        </group>
-      )}
     </group>
   )
 }
@@ -212,7 +167,7 @@ export function MoreNpc(props) {
   return (
     <Boundary fallback={<CartoonMore {...props} />}>
       <Suspense fallback={null}>
-        <Npc3D url={MORE_URL} holdsPaper {...props} />
+        <Npc3D url={MORE_URL} {...props} />
       </Suspense>
     </Boundary>
   )
