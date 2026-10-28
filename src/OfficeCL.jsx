@@ -7,10 +7,15 @@ import {
   makeCorridorCarpetTexture,
   makePinwheelTexture,
   makePosterTexture,
+  makeBoardTexture,
+  makeFrostedFilmTexture,
+  makeNumberedLockerTexture,
+  makeLogoWallTexture,
+  makeTentCardTexture,
   makeSantiagoTexture,
   makeTimelineSignTexture,
 } from './textures'
-import { Chair, Column, ExitSign, HALF_PI, Laptop, Plant, Wall, WindowWall, rng } from './Decor'
+import { Chair, Column, ExitSign, HALF_PI, Laptop, Plant, Table, Wall, WindowWall, rng } from './Decor'
 
 const C = OFFICES.cl
 const { room, corridorX: CORRIDOR_X } = C
@@ -61,7 +66,7 @@ const BACKS = ['#2b2e32', '#2b2e32', '#8e9298', '#9b9fa5']
 const TAKEN = new Set([OFFICES.cl.npc.key, OFFICES.cl.nico.key])
 const JACKETS = ['#1e2126', '#23304a', '#2a2a2d', '#3d1f1f']
 
-function Bench({ x, z, len, d, index, flag }) {
+function Bench({ x, z, len, d, index, flag, tentMap }) {
   const seats = useMemo(() => {
     const rand = rng(300 + index * 19)
     return [-1, 1].flatMap((s) =>
@@ -79,6 +84,7 @@ function Bench({ x, z, len, d, index, flag }) {
         headset: rand() < 0.25,
         pad: rand() < 0.2,
         flag: rand() < 0.14,
+        tent: rand() < 0.1,
       }))
     )
   }, [index])
@@ -151,6 +157,12 @@ function Bench({ x, z, len, d, index, flag }) {
               <meshStandardMaterial color="#33a05f" roughness={0.9} />
             </mesh>
           )}
+          {tentMap && p.tent && (
+            <mesh position={[p.sx + 0.1, DESK_HEIGHT + 0.09, p.s * 0.2]} rotation-y={p.s > 0 ? Math.PI : 0}>
+              <planeGeometry args={[0.1, 0.13]} />
+              <meshBasicMaterial map={tentMap} side={DoubleSide} toneMapped={false} />
+            </mesh>
+          )}
           {flag && p.flag && <MiniFlag x={p.sx + 0.3} z={p.s * 0.55} map={flag} />}
         </group>
       ))}
@@ -188,7 +200,7 @@ function TimelineSign({ z, y, year, big, label }) {
   const size = 0.95
   const hang = WALL_HEIGHT - (y + size / 2 - 0.12)
   return (
-    <group position={[5.6, y, z]}>
+    <group position={[6.2, y, z]}>
       <mesh>
         <planeGeometry args={[size, size]} />
         <meshBasicMaterial map={map} transparent alphaTest={0.4} side={DoubleSide} toneMapped={false} />
@@ -285,45 +297,136 @@ function Festive() {
   )
 }
 
-// ---------- Pared derecha: salas con vidrio y marco de madera, pósters y matafuego ----------
-function RightWall() {
-  const poster = useMemo(makePosterTexture, [])
-  const x = room.w / 2
+// ---------- Pared derecha: recepción, salas vidriadas, baño, lockers y diario mural ----------
+const X_WALL = room.w / 2 - 0.1 // cara interior de la pared derecha
+
+// Recepción: pared gris oscuro con el logo TSOFT y mostrador de mármol
+function Reception() {
+  const logo = useMemo(makeLogoWallTexture, [])
+  const R = C.reception
   return (
     <>
-      {/* Tabique vidriado con marcos de madera */}
-      {[-5, -1.7, 1.6, 5].map((z) => (
-        <mesh key={z} position={[x - 0.12, 1.5, z]}>
-          <boxGeometry args={[0.1, 3.0, 0.1]} />
+      <mesh position={[X_WALL - 0.01, 1.75, R.z]} rotation-y={-HALF_PI}>
+        <planeGeometry args={[3.2, 3.5]} />
+        <meshStandardMaterial color="#8a8c90" emissive="#2a2b2d" roughness={0.9} />
+      </mesh>
+      <mesh position={[X_WALL - 0.03, 1.9, R.z]} rotation-y={-HALF_PI}>
+        <planeGeometry args={[2.6, 0.65]} />
+        <meshBasicMaterial map={logo} transparent toneMapped={false} />
+      </mesh>
+      <group position={[R.x, 0, R.z]}>
+        <mesh position={[0, 0.54, 0]} castShadow receiveShadow>
+          <boxGeometry args={[R.w - 0.1, 1.08, R.d - 0.1]} />
+          <meshStandardMaterial color="#b9a58d" roughness={0.7} />
+        </mesh>
+        <mesh position={[-0.08, 1.1, 0]} castShadow>
+          <boxGeometry args={[R.w - 0.1, 0.05, R.d - 0.05]} />
+          <meshStandardMaterial color="#ecebe7" roughness={0.25} />
+        </mesh>
+      </group>
+    </>
+  )
+}
+
+// Salas con tabique de vidrio esmerilado con líneas, marcos y puertas de madera
+function GlassRooms() {
+  const film = useMemo(makeFrostedFilmTexture, [])
+  const { x, zs } = C.rooms
+  return (
+    <>
+      {zs.map((z) => (
+        <mesh key={z} position={[x, 1.5, z]}>
+          <boxGeometry args={[0.08, 3.0, 0.08]} />
           <meshStandardMaterial color={WOOD} roughness={0.7} />
         </mesh>
       ))}
-      <mesh position={[x - 0.12, 3.0, 0]}>
-        <boxGeometry args={[0.1, 0.1, 10.1]} />
+      <mesh position={[x, 3.0, (zs[0] + zs[zs.length - 1]) / 2]}>
+        <boxGeometry args={[0.08, 0.08, zs[0] - zs[zs.length - 1]]} />
         <meshStandardMaterial color={WOOD} roughness={0.7} />
       </mesh>
-      <mesh position={[x - 0.12, 1.5, 0]} rotation-y={-HALF_PI}>
-        <planeGeometry args={[10, 3]} />
-        <meshStandardMaterial color="#b9d0d8" transparent opacity={0.25} depthWrite={false} />
+      {zs.slice(0, -1).map((z0, i) => {
+        const z1 = zs[i + 1]
+        const zc = (z0 + z1) / 2
+        const w = z0 - z1 - 0.08
+        return (
+          <group key={i}>
+            <mesh position={[x - 0.01, 1.5, zc]} rotation-y={-HALF_PI}>
+              <planeGeometry args={[w, 3.0]} />
+              <meshStandardMaterial color="#c4d6dc" transparent opacity={0.22} depthWrite={false} />
+            </mesh>
+            <mesh position={[x - 0.02, 1.0, zc]} rotation-y={-HALF_PI}>
+              <planeGeometry args={[w, 1.8]} />
+              <meshBasicMaterial map={film} transparent toneMapped={false} depthWrite={false} />
+            </mesh>
+            {/* Puerta de madera entreabierta */}
+            <mesh position={[x - 0.22, 1.05, z0 - 0.62]} rotation-y={-0.9}>
+              <boxGeometry args={[0.05, 2.1, 0.85]} />
+              <meshStandardMaterial color="#b6ab9c" roughness={0.75} />
+            </mesh>
+            {/* Mesa y sillas blancas adentro */}
+            <Table x={x + 0.45} z={zc} w={0.5} d={1.3} />
+            <Chair x={x + 0.45} z={zc + 0.95} rot={0} back="#ececec" />
+            <Chair x={x + 0.45} z={zc - 0.95} rot={Math.PI} back="#ececec" />
+          </group>
+        )
+      })}
+    </>
+  )
+}
+
+// Boxes de respaldo alto tapizados en gris oscuro, con mesa alta blanca
+function Booths() {
+  const { x, zs } = C.booths
+  const fabric = { color: '#2f3134', roughness: 0.95 }
+  return zs.map((z) => (
+    <group key={z} position={[x, 0, z]}>
+      <mesh position={[-0.45, 0.95, 0]} castShadow>
+        <boxGeometry args={[0.2, 1.9, 1.9]} />
+        <meshStandardMaterial {...fabric} />
       </mesh>
-      {/* Puerta de madera y vidrio */}
-      <mesh position={[x - 0.13, 1.05, 0.05]}>
-        <boxGeometry args={[0.06, 2.1, 0.95]} />
-        <meshStandardMaterial color={WOOD} roughness={0.7} />
-      </mesh>
-      <mesh position={[x - 0.165, 1.1, 0.05]} rotation-y={-HALF_PI}>
-        <planeGeometry args={[0.7, 1.7]} />
-        <meshStandardMaterial color="#aebfc6" transparent opacity={0.7} />
-      </mesh>
-      {/* Pósters */}
-      {[9, -8].map((z) => (
-        <mesh key={z} position={[x - 0.11, 1.55, z]} rotation-y={-HALF_PI}>
-          <planeGeometry args={[0.7, 1.0]} />
-          <meshBasicMaterial map={poster} toneMapped={false} />
+      {[0.5, 0.95, 1.4].map((y) => (
+        <mesh key={y} position={[-0.34, y, 0]}>
+          <boxGeometry args={[0.005, 0.01, 1.9]} />
+          <meshBasicMaterial color="#17181a" />
         </mesh>
       ))}
+      <mesh position={[-0.05, 0.22, 0]} castShadow>
+        <boxGeometry args={[0.6, 0.44, 1.9]} />
+        <meshStandardMaterial {...fabric} />
+      </mesh>
+      <mesh position={[0.3, 1.05, 0]} castShadow>
+        <boxGeometry args={[0.4, 0.04, 1.0]} />
+        <meshStandardMaterial color="#f4f4f2" roughness={0.4} />
+      </mesh>
+      <mesh position={[0.3, 0.52, 0]}>
+        <cylinderGeometry args={[0.04, 0.04, 1.04, 10]} />
+        <meshStandardMaterial color="#9ea3a8" metalness={0.6} roughness={0.35} />
+      </mesh>
+    </group>
+  ))
+}
+
+function RightWall() {
+  const lockers = useMemo(() => makeNumberedLockerTexture({ cols: 14, rows: 5, start: 36 }), [])
+  const board = useMemo(makeBoardTexture, [])
+  const poster = useMemo(makePosterTexture, [])
+  const x = X_WALL
+  return (
+    <>
+      <Reception />
+      <GlassRooms />
+      <Booths />
+      {/* Puerta del baño */}
+      <mesh position={[x - 0.03, 1.05, -2.0]} rotation-y={-HALF_PI}>
+        <boxGeometry args={[0.95, 2.1, 0.06]} />
+        <meshStandardMaterial color="#2a2c30" roughness={0.6} />
+      </mesh>
+      <mesh position={[x - 0.07, 1.6, -2.0]} rotation-y={-HALF_PI}>
+        <planeGeometry args={[0.16, 0.2]} />
+        <meshBasicMaterial color="#d9d9d6" />
+      </mesh>
       {/* Matafuego */}
-      <group position={[x - 0.2, 0, -9.2]}>
+      <group position={[x - 0.15, 0, -3.1]}>
         <mesh position={[0, 0.3, 0]}>
           <cylinderGeometry args={[0.075, 0.075, 0.46, 16]} />
           <meshStandardMaterial color="#c8202e" roughness={0.5} />
@@ -333,6 +436,66 @@ function RightWall() {
           <meshStandardMaterial color="#1b1c1f" />
         </mesh>
       </group>
+      {/* Lockers numerados de madera clara (36 a 105) */}
+      <mesh position={[x - 0.02, 1.15, -6.8]} rotation-y={-HALF_PI}>
+        <planeGeometry args={[6.4, 2.3]} />
+        <meshStandardMaterial map={lockers} roughness={0.75} />
+      </mesh>
+      {/* Diario mural NOVEDADES (pegado a los lockers, sin pisarlos: ellos terminan en z = -10) */}
+      <mesh position={[x - 0.02, 1.7, -10.92]} rotation-y={-HALF_PI}>
+        <planeGeometry args={[1.8, 1.35]} />
+        <meshBasicMaterial map={board} toneMapped={false} />
+      </mesh>
+      {/* Póster en la pared de la entrada */}
+      <mesh position={[x - 0.02, 1.55, 11.3]} rotation-y={-HALF_PI}>
+        <planeGeometry args={[0.6, 0.85]} />
+        <meshBasicMaterial map={poster} toneMapped={false} />
+      </mesh>
+    </>
+  )
+}
+
+// ---------- Mesas de madera clara con patas grises, junto al ventanal del fondo ----------
+function WoodPods() {
+  return (
+    <>
+      {C.pods.map((p, i) => (
+        <group key={p.id}>
+          {[-1, 1].map((s) => (
+            <group key={s}>
+              <Table x={p.x} z={p.z + s * 0.45} w={1.8} d={0.8} legColor="#8b9096" />
+              <Chair x={p.x - 0.4} z={p.z + s * 1.2} rot={s > 0 ? 0 : Math.PI} back="#8e9298" />
+              <Chair x={p.x + 0.4} z={p.z + s * 1.2} rot={(s > 0 ? 0 : Math.PI) + 0.2} back="#2b2e32" />
+              <Laptop x={p.x - 0.4} z={p.z + s * 0.55} flip={s < 0} lit={i === 0} />
+            </group>
+          ))}
+        </group>
+      ))}
+      {/* Perchero */}
+      <group position={[-6.4, 0, -10.2]}>
+        <mesh position={[0, 0.9, 0]}>
+          <cylinderGeometry args={[0.02, 0.02, 1.8, 8]} />
+          <meshStandardMaterial color="#9ea3a8" metalness={0.6} roughness={0.35} />
+        </mesh>
+        <mesh position={[0, 0.03, 0]}>
+          <cylinderGeometry args={[0.2, 0.2, 0.04, 16]} />
+          <meshStandardMaterial color="#9ea3a8" metalness={0.6} roughness={0.35} />
+        </mesh>
+      </group>
+      {/* Armario blanco bajo */}
+      <mesh position={[-3.0, 0.4, -11.5]} castShadow receiveShadow>
+        <boxGeometry args={[1.0, 0.8, 0.5]} />
+        <meshStandardMaterial color="#f1f1ef" roughness={0.5} />
+      </mesh>
+      {/* Pantalla de proyección enrollada y proyector en el cielorraso */}
+      <mesh position={[-3.5, 3.3, -11.6]}>
+        <cylinderGeometry args={[0.06, 0.06, 2.6, 10]} />
+        <meshStandardMaterial color="#e8e8e6" />
+      </mesh>
+      <mesh position={[-3.5, 3.3, -8.4]}>
+        <boxGeometry args={[0.35, 0.14, 0.3]} />
+        <meshStandardMaterial color="#d8d8d5" roughness={0.5} />
+      </mesh>
     </>
   )
 }
@@ -345,6 +508,7 @@ export default function OfficeCL() {
   const hd = room.d / 2
   const y = WALL_HEIGHT / 2
   const flag = useMemo(C.festive ? makeChileFlagTexture : () => null, [])
+  const tentMap = useMemo(makeTentCardTexture, [])
   return (
     <>
       <Floors />
@@ -371,12 +535,13 @@ export default function OfficeCL() {
       {C.plants.map((p, i) => (
         <Plant key={i} {...p} />
       ))}
-      <ExitSign x={5.9} z={hd - 0.5} />
+      <ExitSign x={6.2} z={hd - 0.5} />
 
       {C.benches.map((b, i) => (
-        <Bench key={b.id} x={b.x} z={b.z} len={b.w} d={b.d} index={i} flag={flag} />
+        <Bench key={b.id} x={b.x} z={b.z} len={b.w} d={b.d} index={i} flag={flag} tentMap={tentMap} />
       ))}
       <Pedestals />
+      <WoodPods />
 
       {C.timeline.map((t) => (
         <TimelineSign key={t.label} {...t} />

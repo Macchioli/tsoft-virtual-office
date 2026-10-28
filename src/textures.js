@@ -1079,3 +1079,127 @@ export function makeChileFlagTexture() {
   g.fill()
   return toTexture(c)
 }
+
+
+// =====================================================================
+// Oficina de Chile (versión con recorrido en fotos): texturas nuevas
+// =====================================================================
+
+// ---------- Vidrio esmerilado con líneas geométricas (las salas vidriadas del pasillo) ----------
+export function makeFrostedFilmTexture() {
+  const [c, g] = makeCanvas(512, 256)
+  g.fillStyle = 'rgba(236,240,241,0.88)'
+  g.fillRect(0, 0, 512, 256)
+  g.strokeStyle = 'rgba(255,255,255,0.95)'
+  g.lineWidth = 3
+  g.beginPath()
+  for (const [x, y] of [[40, 20], [120, 236], [250, 10], [330, 246], [470, 30], [500, 200]]) {
+    g.moveTo(256, 128)
+    g.lineTo(x, y)
+  }
+  g.stroke()
+  g.strokeStyle = 'rgba(120,130,134,0.35)'
+  g.lineWidth = 1.5
+  g.stroke()
+  // Franja superior sin film (se ve a través)
+  g.clearRect(0, 0, 512, 22)
+  return toTexture(c)
+}
+
+// ---------- Lockers de madera clara con números (36 a 105) ----------
+export function makeNumberedLockerTexture({ cols, rows, start }) {
+  const cw = 96
+  const ch = 84
+  const [c, g] = makeCanvas(cols * cw, rows * ch)
+  g.fillStyle = '#cdb99c'
+  g.fillRect(0, 0, c.width, c.height)
+  const rand = rng(77)
+  for (let i = 0; i < 900; i++) {
+    g.strokeStyle = `rgba(110,90,60,${0.05 + rand() * 0.08})`
+    g.lineWidth = 1
+    const x = rand() * c.width
+    const y = rand() * c.height
+    g.beginPath()
+    g.moveTo(x, y)
+    g.lineTo(x + 20 + rand() * 40, y + (rand() - 0.5) * 4)
+    g.stroke()
+  }
+  g.textAlign = 'center'
+  g.textBaseline = 'middle'
+  g.font = 'bold 40px system-ui, Arial, sans-serif'
+  for (let col = 0; col < cols; col++) {
+    for (let row = 0; row < rows; row++) {
+      const n = start + col * rows + row
+      g.strokeStyle = 'rgba(70,56,40,0.55)'
+      g.lineWidth = 3
+      g.strokeRect(col * cw + 2, row * ch + 2, cw - 4, ch - 4)
+      const red = n % 4 === 1 || n % 13 === 0
+      g.lineWidth = 2
+      g.strokeStyle = red ? '#d9202f' : '#26282b'
+      g.fillStyle = red ? '#d9202f' : 'rgba(255,255,255,0.0)'
+      if (red) g.fillText(String(n), col * cw + cw / 2, row * ch + ch / 2 + 2)
+      else g.strokeText(String(n), col * cw + cw / 2, row * ch + ch / 2 + 2)
+    }
+  }
+  return toTexture(c)
+}
+
+// ---------- Logo TSOFT en letras gris oscuro con la flecha roja (recepción) ----------
+export function makeLogoWallTexture() {
+  const [c, g] = makeCanvas(1024, 256)
+  g.textAlign = 'left'
+  g.textBaseline = 'middle'
+  g.font = 'bold 190px system-ui, Arial, sans-serif'
+  g.fillStyle = '#3d3f43'
+  g.fillText('TSOFT', 40, 130)
+  const w = g.measureText('TSOFT').width
+  g.fillStyle = '#d9202f'
+  g.beginPath()
+  g.moveTo(60 + w, 40)
+  g.lineTo(60 + w + 120, 128)
+  g.lineTo(60 + w, 216)
+  g.lineTo(60 + w + 36, 128)
+  g.closePath()
+  g.fill()
+  return toTexture(c)
+}
+
+// ---------- Diario mural "NOVEDADES" con avisos ----------
+export function makeBoardTexture() {
+  const [c, g] = makeCanvas(512, 384)
+  g.fillStyle = '#f4f6f6'
+  g.fillRect(0, 0, 512, 384)
+  g.fillStyle = '#d9202f'
+  g.fillRect(0, 0, 512, 64)
+  g.fillStyle = '#ffffff'
+  g.font = 'bold 44px system-ui, Arial, sans-serif'
+  g.textAlign = 'left'
+  g.textBaseline = 'middle'
+  g.fillText('NOVEDADES', 20, 34)
+  const rand = rng(91)
+  const cols = ['#ffffff', '#e8eef0', '#fbe9e7', '#e6f2e8']
+  for (let i = 0; i < 9; i++) {
+    const x = 18 + (i % 3) * 164
+    const y = 84 + Math.floor(i / 3) * 96
+    g.fillStyle = cols[Math.floor(rand() * cols.length)]
+    g.fillRect(x, y, 146, 82)
+    g.strokeStyle = 'rgba(0,0,0,0.25)'
+    g.strokeRect(x, y, 146, 82)
+    g.fillStyle = '#8a9296'
+    for (let l = 0; l < 4; l++) g.fillRect(x + 10, y + 12 + l * 16, 90 + rand() * 40, 5)
+  }
+  return toTexture(c)
+}
+
+// ---------- Cartelito de escritorio "Aquí puro buen trato" ----------
+export function makeTentCardTexture() {
+  const [c, g] = makeCanvas(128, 160)
+  g.fillStyle = '#f6c9d0'
+  g.fillRect(0, 0, 128, 160)
+  g.fillStyle = '#d9202f'
+  g.textAlign = 'center'
+  g.textBaseline = 'middle'
+  g.font = 'bold 30px system-ui, Arial, sans-serif'
+  ;['aquí', 'puro', 'buen', 'trato'].forEach((t, i) => g.fillText(t, 64, 30 + i * 34))
+  return toTexture(c)
+}

@@ -168,6 +168,14 @@ const clPedestals = clBench.rows.map((z, i) => ({
   w: 0.5,
   d: 1.2,
 }))
+// Recorrido nuevo: recepción, salas vidriadas, boxes, lockers y mesas de madera junto al ventanal
+const clReception = { x: 7.35, z: 9.2, w: 0.8, d: 2.4 }
+const clRooms = { x: 7.0, zs: [6.4, 4.0, 1.6, -0.8] } // tabique de vidrio y límites de las 3 salas
+const clBooths = { x: 5.0, zs: [5.6, 3.5, 1.4] } // boxes de respaldo alto sobre el pasillo
+const clPods = [
+  { id: 'pod0', x: -5.2, z: -10.0, w: 2.0, d: 2.2 },
+  { id: 'pod1', x: -0.8, z: -10.0, w: 2.0, d: 2.2 },
+]
 const clColumns = [8.4, 0.6, -7.0].map((z, i) => ({ id: `c${i}`, x: -7.3, z, r: 0.3 }))
 const clPlants = [
   { x: 7.0, z: clW.panelZ + 0.55, s: 1.1 },
@@ -178,7 +186,7 @@ const cl = {
   id: 'cl',
   name: 'Chile',
   room: clRoom,
-  start: [5.6, 1.7, 10.4], // en el pasillo oscuro, mirando hacia el fondo
+  start: [6.25, 1.7, 10.4], // en el pasillo oscuro, mirando hacia el fondo
   ...clW,
   npc: clMore,
   nico: clNico,
@@ -187,16 +195,27 @@ const cl = {
   benches: clBenches,
   pedestals: clPedestals,
   columns: clColumns,
+  reception: clReception,
+  rooms: clRooms,
+  booths: clBooths,
+  pods: clPods,
   plants: clPlants,
-  // Cartelitos colgantes con la historia de la empresa (leídos de la foto: editalos a gusto)
+  // Cartelitos colgantes con la historia de la empresa (leídos de las fotos del recorrido).
+  // Los que no se leían bien (años de ISO 9001, GPTW, 1300) están aproximados: editalos a gusto.
   timeline: [
-    { z: 8.6, y: 2.75, year: '2014', big: '+350', label: 'Colaboradores' },
-    { z: 5.2, y: 2.8, year: '2016', big: '+500', label: 'Clientes' },
-    { z: 1.8, y: 2.85, year: '2017', big: '', label: 'Alianza con Atlassian' },
-    { z: -1.6, y: 2.9, year: '2019', big: '', label: 'Perú · México' },
+    { z: 10.0, y: 2.8, year: '1999', big: '', label: 'Cuando todo comenzó' },
+    { z: 8.0, y: 2.85, year: '2003', big: '', label: 'Testing Factory' },
+    { z: 6.0, y: 2.8, year: '2004', big: '', label: 'Expansión del Portafolio' },
+    { z: 4.0, y: 2.85, year: '2006', big: '', label: 'Alianza con HP' },
+    { z: 2.0, y: 2.8, year: '2007', big: '', label: 'Expansión a Chile' },
+    { z: 0.0, y: 2.85, year: '', big: 'ISO 9001', label: 'Certificación' },
+    { z: -2.0, y: 2.8, year: '2011', big: '', label: 'Llegamos a México' },
+    { z: -4.0, y: 2.85, year: '2012', big: '', label: 'Nuevas oficinas' },
+    { z: -6.0, y: 2.8, year: '2023', big: '', label: '¡Great Place to Work!' },
+    { z: -8.0, y: 2.85, year: '', big: '+1300', label: 'Tsofers' },
   ],
   // Adornos de Fiestas Patrias (la foto es de septiembre): poné false para sacarlos
-  festive: true,
+  festive: false,
   ceiling: {
     panels: [
       ...clBench.rows.flatMap((z) => [-4.4, -1.3, 1.8].map((x) => [x, z, 0.6, 0.6])),
@@ -221,6 +240,11 @@ const cl = {
   colliders: [
     ...clBenches.map((b) => ({ ...b, w: b.w + 0.1, d: b.d + 1.3 })),
     ...clPedestals,
+    { id: 'recepcion', ...clReception },
+    { id: 'salas', x: 7.45, z: 2.8, w: 0.95, d: 7.4 },
+    { id: 'boxes', x: clBooths.x, z: 3.5, w: 1.1, d: 6.2 },
+    ...clPods,
+    { id: 'armario', x: -3.0, z: -11.5, w: 1.0, d: 0.5 },
     ...clColumns.map((c) => box(c.id, c, c.r * 2 + 0.1, c.r * 2 + 0.1)),
     ...clPlants.map((p, i) => box(`plant${i}`, p, 0.5, 0.5)),
   ],
