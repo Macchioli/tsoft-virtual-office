@@ -257,3 +257,97 @@ body,
 .overlay-btn:hover {
   background: rgba(255, 255, 255, 0.15);
 }
+
+/* ---------- Rincón del café y arcade ---------- */
+.arcade-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 15;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  background: rgba(6, 8, 12, 0.88);
+  color: #fff;
+  user-select: none;
+}
+.arcade-cabinet {
+  padding: 18px;
+  border-radius: 18px;
+  background: linear-gradient(180deg, #d9202f, #8f1019);
+  box-shadow: 0 0 60px rgba(217, 32, 47, 0.45);
+}
+.arcade-canvas {
+  display: block;
+  width: min(86vw, 640px);
+  aspect-ratio: 4 / 3;
+  image-rendering: pixelated;
+  border-radius: 8px;
+  background: #0b0f14;
+}
+.arcade-help {
+  margin: 0;
+  font-size: 0.9rem;
+  opacity: 0.8;
+  text-align: center;
+  padding: 0 16px;
+}
+
+.coffee-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 15;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  pointer-events: none;
+  background: radial-gradient(circle at 50% 70%, rgba(60, 35, 20, 0.35), rgba(0, 0, 0, 0) 60%);
+}
+.coffee-cup {
+  position: relative;
+  transform: translateY(70vh);
+  animation: sip 3.4s ease-in-out forwards;
+}
+.coffee-text {
+  margin: 0 0 6vh;
+  padding: 8px 16px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  font-size: 1.05rem;
+  opacity: 0;
+  animation: sipText 3.4s ease-in-out forwards;
+}
+.steam {
+  position: absolute;
+  top: -10px;
+  width: 8px;
+  height: 46px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.55);
+  filter: blur(4px);
+  animation: steam 1.4s ease-in-out infinite;
+}
+.steam.s1 { left: 70px; }
+.steam.s2 { left: 104px; animation-delay: 0.35s; }
+.steam.s3 { left: 138px; animation-delay: 0.7s; }
+@keyframes steam {
+  0% { transform: translateY(8px); opacity: 0; }
+  50% { opacity: 0.8; }
+  100% { transform: translateY(-34px); opacity: 0; }
+}
+@keyframes sip {
+  0% { transform: translateY(70vh) rotate(0deg); }
+  28% { transform: translateY(-4vh) rotate(0deg); }
+  50% { transform: translateY(-14vh) rotate(-24deg); }
+  64% { transform: translateY(-14vh) rotate(-24deg); }
+  78% { transform: translateY(-4vh) rotate(0deg); }
+  100% { transform: translateY(70vh) rotate(0deg); }
+}
+@keyframes sipText {
+  0%, 30% { opacity: 0; }
+  45%, 80% { opacity: 1; }
+  100% { opacity: 0; }
+}

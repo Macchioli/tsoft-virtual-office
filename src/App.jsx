@@ -8,6 +8,8 @@ import Interaction from './Interaction'
 import PaperModal from './PaperModal'
 import Dialogue from './Dialogue'
 import FlagSelector from './FlagSelector'
+import Arcade from './Arcade'
+import CoffeeSip from './CoffeeSip'
 import {
   DARI,
   DARI_CONTACT,
@@ -24,6 +26,8 @@ import {
 
 const PAPER = PAPERS[0]
 const PEOPLE = { [NPC.id]: NPC, [NICO.id]: NICO, [DARI.id]: DARI } // a quién se puede hablarle
+// Lo que dice la mirilla al apuntar a cada cosa
+const HINTS = { coffee: 'Clic para tomar un café', arcade: 'Clic para jugar al Pong' }
 const NO_COLLIDERS = []
 const NO_ROOM = { w: 16, d: 22 }
 
@@ -53,6 +57,8 @@ export default function App() {
   const [heldId, setHeldId] = useState(null) // hoja que el jugador está tomando
   const [hiddenId, setHiddenId] = useState(null) // hoja que sale de la mano de More
   const [openPaper, setOpenPaper] = useState(null) // hoja con el modal abierto
+  const [drinking, setDrinking] = useState(false) // tomando un café (animación)
+  const [playing, setPlaying] = useState(false) // jugando al Pong del arcade
 
   const cfg = office ? OFFICES[office] : null
 
@@ -80,11 +86,15 @@ export default function App() {
     setHeldId(null)
     setHiddenId(null)
     setOpenPaper(null)
+    setDrinking(false)
+    setPlaying(false)
   }, [])
 
   const handleSelect = useCallback((id) => {
-    if (busyRef.current || !PEOPLE[id]) return
-    setTalking(id)
+    if (busyRef.current) return
+    if (id === 'coffee') setDrinking(true)
+    else if (id === 'arcade') setPlaying(true)
+    else if (PEOPLE[id]) setTalking(id)
   }, [])
 
   // Terminó el diálogo. Con More: ofrece la hoja y arranca la secuencia de las manos.
@@ -130,7 +140,14 @@ export default function App() {
   const moreMode = heldId || openPaper?.id === PAPER.id ? 'offer' : talking === NPC.id ? 'talk' : 'idle'
   const nicoMode = talking === NICO.id ? 'talk' : 'idle'
   const dariMode = talking === DARI.id ? 'talk' : 'idle'
-  const free = locked && !talking && !heldId
+  const free = locked && !talking && !heldId && !drinking && !playing
+
+  // La animación del café dura 3,4 s
+  useEffect(() => {
+    if (!drinking) return
+    const id = setTimeout(() => setDrinking(false), 3400)
+    return () => clearTimeout(id)
+  }, [drinking])
 
   return (
     <>
@@ -172,15 +189,18 @@ export default function App() {
           onUnlock={() => {
             setLocked(false)
             setTalking(null) // ESC durante el diálogo lo cierra
+            setPlaying(false) // ESC en el arcade también
           }}
         />
       </Canvas>
 
-      {locked && !talking && (
+      {locked && !talking && !drinking && !playing && (
         <>
           <div className={`crosshair ${hoveredId ? 'active' : ''}`} />
           {hoveredId && !heldId && (
-            <div className="hint">Clic para hablar con {(PEOPLE[hoveredId] || NPC).name}</div>
+            <div className="hint">
+              {HINTS[hoveredId] || `Clic para hablar con ${(PEOPLE[hoveredId] || NPC).name}`}
+            </div>
           )}
         </>
       )}
@@ -201,6 +221,9 @@ export default function App() {
           onDone={handleDialogueDone}
         />
       )}
+
+      {drinking && <CoffeeSip />}
+      {playing && <Arcade />}
 
       {!office && <FlagSelector onSelect={handleOffice} />}
 

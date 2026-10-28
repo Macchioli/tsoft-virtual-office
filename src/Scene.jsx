@@ -5,6 +5,7 @@ import { DariNpc, MoreNpc, NicoNpc } from './Npc3D'
 import { Ceiling, Lights, PlantWall } from './Decor'
 import OfficeAR from './OfficeAR'
 import OfficeCL from './OfficeCL'
+import { BreakCorner, BreakTargets } from './Break'
 
 // Textura de la hoja (con el logo arriba). También la usa Hands.jsx.
 export function usePaperTexture() {
@@ -12,7 +13,7 @@ export function usePaperTexture() {
 }
 
 // office: 'ar' o 'cl'. Cada oficina trae sus muebles; la pared del fondo (enredadera con el logo)
-// es la misma en las dos.
+// es opcional por oficina: se saca con plantWall: false en su config.
 export default function Scene({ office, papersRef, paperRef, moreMode, nicoMode = 'idle', dariMode = 'idle', paperHidden }) {
   const cfg = OFFICES[office]
   const Office = office === 'cl' ? OfficeCL : OfficeAR
@@ -36,11 +37,15 @@ export default function Scene({ office, papersRef, paperRef, moreMode, nicoMode 
       <Lights list={cfg.lights} />
       <Office />
 
-      {/* Pared del fondo: enredadera con el logo de neón (sin cartel ni escritorio) */}
-      <PlantWall panelZ={cfg.panelZ} />
+      {/* Pared del fondo: enredadera con el logo de neón (opcional por oficina) */}
+      {cfg.plantWall !== false && <PlantWall panelZ={cfg.panelZ} />}
+
+      {/* Rincón del café con arcade, contra la pared del frente */}
+      <BreakCorner office={office} />
 
       {/* More, Nico y Dari, sentados en sus sillas: el grupo es el que recorre el raycaster */}
       <group ref={papersRef}>
+        <BreakTargets office={office} />
         <MoreNpc
           id={NPC.id}
           x={cfg.npc.x}

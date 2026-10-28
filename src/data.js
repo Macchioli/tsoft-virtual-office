@@ -128,6 +128,8 @@ const ar = {
   npc: arMore,
   nico: arNico,
   dari: arDari,
+  // Rincón del café + arcade, contra la pared del frente: wallZ = cara interior de la pared
+  breakSpot: { wallZ: 10.9, coffeeX: 5.6, arcadeX: 3.9 },
   corridorX: -4.2, // límite entre las baldosas del pasillo y la alfombra
   lockers: { z0: 10.2, cols: 24, rows: 4, cellW: 0.5, cellH: 0.55, depth: 0.5 },
   bench: arBench,
@@ -164,6 +166,8 @@ const ar = {
     { pos: [-6.1, 3.0, -8.4], color: '#ffd9a8', intensity: 6, distance: 7 },
   ],
   colliders: [
+    { id: 'cafe', x: 5.6, z: 10.6, w: 1.5, d: 0.6 },
+    { id: 'arcade', x: 3.9, z: 10.5, w: 0.8, d: 0.8 },
     ...arBenches.map((b) => ({ ...b, w: b.w + 0.1, d: b.d + 1.3 })),
     ...arStorage,
     box('column', arColumn, arColumn.r * 2 + 0.1, arColumn.r * 2 + 0.1),
@@ -190,10 +194,8 @@ const clPedestals = clBench.rows.map((z, i) => ({
   w: 0.5,
   d: 1.2,
 }))
-// Recorrido nuevo: recepción, salas vidriadas, boxes, lockers y mesas de madera junto al ventanal
+// Recorrido: recepción, pasillo oscuro despejado, lockers y mesas de madera junto al ventanal
 const clReception = { x: 7.35, z: 9.2, w: 0.8, d: 2.4 }
-const clRooms = { x: 7.0, zs: [6.4, 4.0, 1.6, -0.8] } // tabique de vidrio y límites de las 3 salas
-const clBooths = { x: 5.0, zs: [5.6, 3.5, 1.4] } // boxes de respaldo alto sobre el pasillo
 const clPods = [
   { id: 'pod0', x: -5.2, z: -10.0, w: 2.0, d: 2.2 },
   { id: 'pod1', x: -0.8, z: -10.0, w: 2.0, d: 2.2 },
@@ -213,14 +215,14 @@ const cl = {
   npc: clMore,
   nico: clNico,
   dari: clDari,
+  breakSpot: { wallZ: 11.9, coffeeX: -0.6, arcadeX: -2.3 },
   corridorX: 4.2, // límite entre la alfombra de los escritorios y el pasillo oscuro
   bench: clBench,
   benches: clBenches,
   pedestals: clPedestals,
   columns: clColumns,
   reception: clReception,
-  rooms: clRooms,
-  booths: clBooths,
+  plantWall: false, // pasillo despejado, sin enredadera al fondo
   pods: clPods,
   plants: clPlants,
   // Cartelitos colgantes con la historia de la empresa (leídos de las fotos del recorrido).
@@ -261,11 +263,11 @@ const cl = {
     { pos: [6.1, 3.0, 2], color: '#fff1dc', intensity: 7, distance: 12 },
   ],
   colliders: [
+    { id: 'cafe', x: -0.6, z: 11.6, w: 1.5, d: 0.6 },
+    { id: 'arcade', x: -2.3, z: 11.5, w: 0.8, d: 0.8 },
     ...clBenches.map((b) => ({ ...b, w: b.w + 0.1, d: b.d + 1.3 })),
     ...clPedestals,
     { id: 'recepcion', ...clReception },
-    { id: 'salas', x: 7.45, z: 2.8, w: 0.95, d: 7.4 },
-    { id: 'boxes', x: clBooths.x, z: 3.5, w: 1.1, d: 6.2 },
     ...clPods,
     { id: 'armario', x: -3.0, z: -11.5, w: 1.0, d: 0.5 },
     ...clColumns.map((c) => box(c.id, c, c.r * 2 + 0.1, c.r * 2 + 0.1)),
