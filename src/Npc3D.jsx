@@ -14,6 +14,12 @@ export const DARI_URL = `${BASE}models/dari.glb`
 const SEAT_HIPS = 0.58
 const SIT_BACK = -0.06
 const angleDiff = (a, b) => Math.atan2(Math.sin(a - b), Math.cos(a - b))
+// Huesos a los que se les aplica twist/bend encima de la animación
+const POSED = [
+  'Head', 'Neck', 'Spine',
+  'LeftUpLeg', 'LeftLeg', 'LeftFoot', 'RightUpLeg', 'RightLeg', 'RightFoot',
+  'LeftArm', 'LeftForeArm', 'RightArm', 'RightForeArm',
+]
 
 // Rota un hueso sobre su pose de animación (se aplica después de mixer.update, cada frame)
 const _q = new Quaternion()
@@ -64,6 +70,9 @@ function Npc3D({ url, id, x, z, rot, mode, seated = false }) {
         o.frustumCulled = false
       }
     })
+    const rest = {}
+    for (const n of POSED) if (b[n]) rest[n] = b[n].quaternion.clone()
+    b.__rest = rest
     return b
   }, [model])
 
@@ -77,23 +86,31 @@ function Npc3D({ url, id, x, z, rot, mode, seated = false }) {
     const dt = Math.min(delta, 0.05)
     const p = pose.current
     p.t += dt
+    // El mixer no escribe un hueso si su valor no cambió desde el frame anterior: sin esto, los
+    // gestos se acumulan encima de sí mismos. Se vuelve a la pose que dejó la animación.
+    for (const n in bones.__rest) bones[n].quaternion.copy(bones.__rest[n])
     mixer.update(dt)
+    for (const n in bones.__rest) bones.__rest[n].copy(bones[n].quaternion)
 
     const dx = camera.position.x - x
     const dz = camera.position.z - z
     const toPlayer = Math.atan2(dx, dz)
     const facing = mode === 'talk'
+    const frontDiff = angleDiff(toPlayer, rot) // ángulo del jugador respecto de hacia dónde mira el asiento
+    const inFront = Math.abs(frontDiff) < 1.9 // ~110° a cada lado
 
     // El cuerpo se gira hacia el jugador cuando conversa.
     // Sentado: la silla gira hasta ±2.6 rad hacia el jugador (no da la vuelta completa)
-    const aim = facing ? (seated ? rot + MathUtils.clamp(angleDiff(toPlayer, rot), -2.6, 2.6) : toPlayer) : rot
+    // (se les habla desde atrás, desde el borde de la fila; durante el diálogo el jugador no camina)
+    const aim = facing ? (seated ? rot + MathUtils.clamp(frontDiff, -2.6, 2.6) : toPlayer) : rot
     p.yaw += angleDiff(aim, p.yaw) * Math.min(1, dt * 6)
     root.current.rotation.y = p.yaw
 
-    // La cabeza sigue al jugador si está cerca
-    const near = Math.hypot(dx, dz) < 7
+    // La cabeza sigue al jugador si está cerca y en el cono frontal (o si conversan); si no, mira al frente
+    const near = Math.hypot(dx, dz) < 7 && (inFront || facing)
     const rel = near ? MathUtils.clamp(angleDiff(toPlayer, p.yaw), -0.8, 0.8) : 0
     p.headYaw = MathUtils.damp(p.headYaw, rel, 5, dt)
+    p.headYaw = Number.isFinite(p.headYaw) ? MathUtils.clamp(p.headYaw, -0.8, 0.8) : 0
     p.talk = MathUtils.damp(p.talk, mode === 'talk' ? 1 : 0, 5, dt)
 
     // Si algún gesto sale en el eje equivocado, ajustá los signos / ejes de abajo
