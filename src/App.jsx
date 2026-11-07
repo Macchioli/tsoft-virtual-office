@@ -1,15 +1,15 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { Suspense, lazy, useCallback, useEffect, useRef, useState } from 'react'
 import { Canvas, useThree } from '@react-three/fiber'
-import { PointerLockControls } from '@react-three/drei'
-import Scene from './Scene'
+import { PointerLockControls, useGLTF } from '@react-three/drei'
 import Player from './Player'
 import Hands from './Hands'
 import Interaction from './Interaction'
 import PaperModal from './PaperModal'
 import Dialogue from './Dialogue'
 import FlagSelector from './FlagSelector'
-import Arcade from './Arcade'
 import CoffeeSip from './CoffeeSip'
+import Loader from './Loader'
+import { DARI_URL, MORE_URL, NICO_URL } from './Npc3D'
 import {
   DARI,
   DARI_CONTACT,
@@ -22,6 +22,15 @@ import {
   NPC,
   OFFICES,
 } from './data'
+
+// Lo pesado se baja recién al elegir una bandera / al jugar
+const Scene = lazy(() => import('./Scene'))
+const Arcade = lazy(() => import('./Arcade'))
+
+// Los modelos empiezan a bajar en la pantalla de banderas, para que ya estén al entrar
+useGLTF.preload(MORE_URL)
+useGLTF.preload(NICO_URL)
+useGLTF.preload(DARI_URL)
 
 const PEOPLE = { [NPC.id]: NPC, [NICO.id]: NICO, [DARI.id]: DARI } // a quién se puede hablarle
 // Lo que dice la mirilla al apuntar a cada cosa
@@ -125,16 +134,18 @@ export default function App() {
 
   return (
     <>
-      <Canvas shadows camera={{ position: [0, 1.7, 6], fov: 75, near: 0.1, far: 100 }}>
+      <Canvas shadows dpr={[1, 1.5]} camera={{ position: [0, 1.7, 6], fov: 75, near: 0.1, far: 100 }}>
         {office && (
-          <Scene
-            key={office}
-            office={office}
-            papersRef={npcRef}
-            moreMode={moreMode}
-            nicoMode={nicoMode}
-            dariMode={dariMode}
-          />
+          <Suspense fallback={null}>
+            <Scene
+              key={office}
+              office={office}
+              papersRef={npcRef}
+              moreMode={moreMode}
+              nicoMode={nicoMode}
+              dariMode={dariMode}
+            />
+          </Suspense>
         )}
         <CameraStart office={office} />
         <Player
@@ -190,9 +201,14 @@ export default function App() {
       )}
 
       {drinking && <CoffeeSip />}
-      {playing && <Arcade />}
+      {playing && (
+        <Suspense fallback={null}>
+          <Arcade />
+        </Suspense>
+      )}
 
       {!office && <FlagSelector onSelect={handleOffice} />}
+      {office && <Loader />}
 
       {office && !locked && !openPaper && (
         <div className="overlay" onClick={() => controlsRef.current?.lock()}>

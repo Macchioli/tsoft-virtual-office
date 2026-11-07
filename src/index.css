@@ -351,3 +351,8 @@ body,
   45%, 80% { opacity: 1; }
   100% { opacity: 0; }
 }
+
+/* ---------- Barra de progreso de carga (debajo de diálogos y modales) ---------- */
+.loader { position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%); width: min(320px, 80vw); z-index: 11; pointer-events: none; text-align: center; color: #fff; font: 600 13px/1.2 system-ui, sans-serif; text-shadow: 0 1px 4px rgba(0,0,0,.6); }
+.loader-bar { margin-top: 8px; height: 4px; border-radius: 2px; background: rgba(255,255,255,.25); overflow: hidden; }
+.loader-fill { height: 100%; background: #e30613; transition: width .2s ease; }

@@ -32,7 +32,7 @@ function Finger({ x, z = -0.092, lens, radius, curl, spread = 0, nail = true, ba
   const r = [radius, radius * 0.92, radius * 0.84]
   const seg = (i, len) => (
     <>
-      <mesh position={[0, 0, -len / 2]} rotation-x={Math.PI / 2} castShadow>
+      <mesh position={[0, 0, -len / 2]} rotation-x={Math.PI / 2}>
         <capsuleGeometry args={[r[i], len, 4, 10]} />
         <meshStandardMaterial {...SKIN} />
       </mesh>
@@ -122,7 +122,7 @@ function Hand({ curl, thumb }) {
   return (
     <group>
       {/* Palma y dorso */}
-      <mesh position={[0, 0, -0.046]} scale={[0.046, 0.017, 0.05]} castShadow>
+      <mesh position={[0, 0, -0.046]} scale={[0.046, 0.017, 0.05]}>
         <sphereGeometry args={[1, 18, 14]} />
         <meshStandardMaterial {...SKIN} />
       </mesh>

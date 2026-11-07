@@ -19,7 +19,7 @@ export default function Scene({ office, papersRef, moreMode, nicoMode = 'idle', 
         position={[6, 10, 4]}
         intensity={0.8}
         castShadow
-        shadow-mapSize={[2048, 2048]}
+        shadow-mapSize={[1024, 1024]}
         shadow-camera-left={-15}
         shadow-camera-right={15}
         shadow-camera-top={15}

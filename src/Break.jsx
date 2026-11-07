@@ -91,13 +91,13 @@ function CoffeeCounter({ x, wallZ }) {
         ))}
         {/* Tarros y tazas sobre la mesada */}
         {[-0.5, -0.38].map((dx, i) => (
-          <mesh key={dx} position={[dx, 0.95, 0.05]} castShadow>
+          <mesh key={dx} position={[dx, 0.95, 0.05]}>
             <cylinderGeometry args={[0.045, 0.045, 0.12 + i * 0.03, 14]} />
             <meshStandardMaterial color={i ? '#d9202f' : '#f2f2f0'} roughness={0.5} />
           </mesh>
         ))}
         {[0.42, 0.55].map((dx) => (
-          <mesh key={dx} position={[dx, 0.93, 0.08]} castShadow>
+          <mesh key={dx} position={[dx, 0.93, 0.08]}>
             <cylinderGeometry args={[0.04, 0.032, 0.08, 14]} />
             <meshStandardMaterial color="#ffffff" roughness={0.5} />
           </mesh>
